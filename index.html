@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>斬不盡的紙</title>
-<meta name="description" content="用解、捌、茈與領域展開攻擊白紙，碎片會依序癒合，並對每種術式各自適應。">
+<meta name="description" content="用解、捌、茈與領域展開攻擊白紙，碎片會依序癒合，法陣每轉一格就對該類攻擊適應並瞬間全癒。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500&display=swap">
 <style>
@@ -28,13 +28,15 @@ h1{font-family:var(--display);font-weight:900;font-size:22px;letter-spacing:.12e
 h1 span{color:var(--blood)}
 .count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .count b{color:var(--paper);font-weight:500;font-size:16px;margin-inline:2px}
-.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .chip{position:relative;border:1px solid var(--line);border-radius:4px;padding:5px 6px 7px;display:flex;justify-content:space-between;align-items:baseline;gap:4px;font-size:12px;color:var(--muted);min-width:0;overflow:hidden}
-.chip .nm{font-family:var(--display);font-weight:700;color:var(--paper);font-size:13px;white-space:nowrap}
+.chip .nm{font-family:var(--display);font-weight:700;color:var(--paper);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.chip .nm small{font-family:var(--body);font-weight:400;color:var(--muted);font-size:11px;margin-left:4px}
 .chip .lv{white-space:nowrap;font-variant-numeric:tabular-nums}
 .chip .lv b{color:var(--blood);font-weight:500}
 .chip i{position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--blood);transition:width .2s}
 .chip.max i{background:var(--paper)}
+#c-mura i,#c-mura .lv b{background:var(--void)}#c-mura .lv b{background:none;color:var(--void)}
 #cv{flex:1;min-height:0;width:100%;display:block;border:1px solid var(--line);border-radius:4px;touch-action:none;cursor:crosshair}
 .modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .modes button{font-family:var(--display);font-weight:700;font-size:14px;padding:7px 0}
@@ -52,11 +54,9 @@ button:focus-visible{outline:2px solid var(--blood);outline-offset:2px}
   <h1>斬不盡的<span>紙</span></h1>
   <div class="count">已復原<b id="cnt">0</b>次</div>
 </header>
-<div class="chips" aria-label="各術式的適應階段">
-  <div class="chip" id="c-kai"><span class="nm">解</span><span class="lv">第<b>0</b>階</span><i></i></div>
-  <div class="chip" id="c-hachi"><span class="nm">捌</span><span class="lv">第<b>0</b>階</span><i></i></div>
-  <div class="chip" id="c-mura"><span class="nm">茈</span><span class="lv">第<b>0</b>階</span><i></i></div>
-  <div class="chip" id="c-dom"><span class="nm">領域</span><span class="lv">第<b>0</b>階</span><i></i></div>
+<div class="chips" aria-label="法陣適應進度">
+  <div class="chip" id="c-slash"><span class="nm">斬擊<small>解・捌・領域</small></span><span class="lv"><b>0</b>/8 格</span><i></i></div>
+  <div class="chip" id="c-mura"><span class="nm">茈</span><span class="lv"><b>0</b>/8 格</span><i></i></div>
 </div>
 <canvas id="cv" aria-label="白色方紙，可用解、捌、茈與領域展開攻擊，碎片會依序癒合並對每種術式各自適應"></canvas>
 <div class="modes" role="radiogroup" aria-label="術式">
@@ -74,20 +74,23 @@ button:focus-visible{outline:2px solid var(--blood);outline-offset:2px}
 <script>
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const GROW=140,STAGES=8,PER=40,LONG=450;
-const NAMES={kai:'解',hachi:'捌',mura:'茈',dom:'伏魔御廚子'};
-const HINTS={auto:'滑動＝解 · 點紙＝捌 · 雙指滑或 Shift 拖曳＝茈 · 長按＝領域',kai:'滑動斬開 · 點一下亂斬',hachi:'點一塊紙，依大小切成細塊',mura:'滑動抹消一條帶狀區域',dom:'點一下展開領域 · 長按也可以'};
+const GROW=140,STAGES=8,LONG=450;
+const POOL={kai:'slash',hachi:'slash',dom:'slash',mura:'mura'},PER={slash:25,mura:8},PNAME={slash:'斬擊',mura:'茈'};
+const HINTS={auto:'滑動＝解 · 點紙＝捌 · 雙指滑或 Shift 拖曳＝茈 · 長按＝領域',kai:'滑動斬開 · 點一下亂斬',hachi:'點一塊紙，依大小切成細塊',mura:'滑動抹消一條帶狀區域',dom:'點一下展開領域：解與捌必中 · 長按也可以'};
 let W=0,H=0,S=0,CX=0,CY=0,dpr=Math.max(1,window.devicePixelRatio||1);
 let pieces=[],active=[],flashes=[],slashes=[],voids=[],sparks=[],mergeT=-1e9,shake=0,count=0,sound=true,actx=null,g=null,trail=[],spread=1,mode='auto',domain=null,lastTick=0;
-let adapt={kai:0,hachi:0,mura:0,dom:0},stage={},levelT=-1e9,levelTxt='';
-try{count=+localStorage.getItem('slice-count')||0;const a=JSON.parse(localStorage.getItem('slice-adapt2')||'null');if(a)Object.assign(adapt,a);else adapt.kai=+localStorage.getItem('slice-adapt')||0;}catch(e){}
+let adapt={slash:0,mura:0},stage={},levelT=-1e9,levelTxt='',wheel={slash:{t:-1e9},mura:{t:-1e9}};
+try{count=+localStorage.getItem('slice-count')||0;const a=JSON.parse(localStorage.getItem('slice-adapt3')||'null');if(a)Object.assign(adapt,a);}catch(e){}
 document.getElementById('cnt').textContent=count;
 
-function stageOf(t){return Math.min(STAGES,Math.floor(adapt[t]/PER));}
-function params(t){const e=Math.pow(stageOf(t)/STAGES,2.5),L=(a,b)=>a+(b-a)*e;return{delay:L(1100,40),dur:L(1200,70),gap:L(10,1.5),slide:L(10,3),shr:L(0.16,0.04),band:L(52,16),cell:L(30,70)};}
-function renderAdapt(){for(const t in adapt){const st=stageOf(t),el=document.getElementById('c-'+t);el.querySelector('b').textContent=st;el.querySelector('i').style.width=(st>=STAGES?100:(adapt[t]%PER)/PER*100)+'%';el.classList.toggle('max',st>=STAGES);
-if(stage[t]!==undefined&&st>stage[t]){levelT=performance.now();levelTxt=st>=STAGES?'完全適應「'+NAMES[t]+'」':'適應「'+NAMES[t]+'」・第'+st+'階';gong();}stage[t]=st;}
-try{localStorage.setItem('slice-adapt2',JSON.stringify(adapt));}catch(e){}}
+function stageOf(t){return Math.min(STAGES,Math.floor(adapt[t]/PER[t]));}
+function params(t){t=POOL[t]||t;const e=Math.pow(stageOf(t)/STAGES,2.5),L=(a,b)=>a+(b-a)*e;return{delay:L(1100,40),dur:L(1200,70),gap:L(10,1.5),slide:L(10,3),shr:L(0.16,0.04),band:L(52,16),cell:L(30,70)};}
+function renderAdapt(){for(const t in adapt){const st=stageOf(t),el=document.getElementById('c-'+t);el.querySelector('b').textContent=st;el.querySelector('i').style.width=(st>=STAGES?100:(adapt[t]%PER[t])/PER[t]*100)+'%';el.classList.toggle('max',st>=STAGES);
+if(stage[t]!==undefined&&st>stage[t])turnWheel(t,st);stage[t]=st;}
+try{localStorage.setItem('slice-adapt3',JSON.stringify(adapt));}catch(e){}}
+function turnWheel(t,st){const now=performance.now();wheel[t].t=now;levelT=now;levelTxt=st>=STAGES?'完全適應「'+PNAME[t]+'」':'法陣轉動「'+PNAME[t]+'」・'+st+'/8';
+for(const sl of active){if(POOL[sl.tech]!==t||sl.done)continue;if(now<sl.healStart||now<sl.healStart+sl.dur){sl.healStart=now;sl.dur=170;}}
+thunk();gong();}
 
 function resize(){const r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;S=Math.min(W,H)*0.5;CX=W/2;CY=H/2;whole();}
 function square(){const h=S/2;return[[CX-h,CY-h],[CX+h,CY-h],[CX+h,CY+h],[CX-h,CY+h]];}
@@ -104,7 +107,7 @@ function valid(L,R){return L.length>=3&&R.length>=3&&area(L)>=3&&area(R)>=3;}
 function inPoly(pt,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>pt[1])!==(b[1]>pt[1])&&pt[0]<(b[0]-a[0])*(pt[1]-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;}
 function refShift(a,dx,dy){const k=(CX-a[0])*dx+(CY-a[1])*dy,mx=a[0]+dx*k,my=a[1]+dy*k;let ref=null,bd=1e18;for(const pc of pieces){const c=cen(pc.poly),d=(c[0]+pc.ux-mx)**2+(c[1]+pc.uy-my)**2;if(d<bd){bd=d;ref=pc;}}return ref?[ref.ux,ref.uy]:[0,0];}
 function newSlash(kind,tech,dx,dy){const p=params(tech),now=performance.now();return{kind,tech,n:[-dy,dx],t:[dx,dy],born:now,healStart:now+p.delay,dur:p.dur,gap:p.gap,slide:p.slide,shr:p.shr,band:p.band,lines:[],roots:[],cg:0,ct:0,rg:0,done:false};}
-function commit(sl){active.push(sl);adapt[sl.tech]++;renderAdapt();}
+function commit(sl){active.push(sl);adapt[POOL[sl.tech]]++;renderAdapt();}
 
 function ac(){actx=actx||new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx;}
 function noiseBurst(dur,f0,f1,vol,q){if(!sound)return;try{const a=ac(),t=a.currentTime,n=Math.floor(a.sampleRate*dur),buf=a.createBuffer(1,n,a.sampleRate),d=buf.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const src=a.createBufferSource();src.buffer=buf;const bp=a.createBiquadFilter();bp.type='bandpass';bp.Q.value=q||1.2;bp.frequency.setValueAtTime(f0,t);bp.frequency.exponentialRampToValueAtTime(f1,t+dur);const gn=a.createGain();gn.gain.value=vol;src.connect(bp).connect(gn).connect(a.destination);src.start();}catch(e){}}
@@ -112,6 +115,7 @@ function swoosh(v){noiseBurst(0.28,3200,500,v??0.5);}
 function tone(type,f0,f1,dur,vol){if(!sound)return;try{const a=ac(),t=a.currentTime,o=a.createOscillator(),gn=a.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);gn.gain.setValueAtTime(vol,t);gn.gain.exponentialRampToValueAtTime(0.001,t+dur);o.connect(gn).connect(a.destination);o.start(t);o.stop(t+dur+0.02);}catch(e){}}
 function tick(){const n=performance.now();if(n-lastTick<45)return;lastTick=n;tone('triangle',1500,800,0.08,0.05);}
 function gong(){if(!sound)return;try{const a=ac(),t=a.currentTime;[[98,0.22],[196,0.1],[294,0.05]].forEach(([f,v])=>{const o=a.createOscillator(),gn=a.createGain();o.frequency.value=f;gn.gain.setValueAtTime(v,t);gn.gain.exponentialRampToValueAtTime(0.001,t+1.6);o.connect(gn).connect(a.destination);o.start(t);o.stop(t+1.7);});}catch(e){}}
+function thunk(){noiseBurst(0.16,420,110,0.6,1.5);tone('square',95,60,0.18,0.09);}
 function chime(){if(!sound)return;try{const a=ac(),t=a.currentTime;[523,784,1046].forEach((f,i)=>{const o=a.createOscillator(),gn=a.createGain(),s=t+i*0.05;o.frequency.value=f;gn.gain.setValueAtTime(0,s);gn.gain.linearRampToValueAtTime(0.08,s+0.02);gn.gain.exponentialRampToValueAtTime(0.001,s+0.6);o.connect(gn).connect(a.destination);o.start(s);o.stop(s+0.7);});}catch(e){}}
 
 function sparkBurst(a,dx,dy,n,col){const nx=-dy,ny=dx,t0=(CX-a[0])*dx+(CY-a[1])*dy;for(let i=0;i<n;i++){const k=t0+(Math.random()-0.5)*S*1.3,v=1+Math.random()*3,s=Math.random()<0.5?1:-1;sparks.push({x:a[0]+dx*k,y:a[1]+dy*k,vx:dx*(2+Math.random()*4)+nx*v*s*0.5,vy:dy*(2+Math.random()*4)+ny*v*s*0.5,l:1,c:col||(Math.random()<0.3?'240,149,149':'255,255,255')});}}
@@ -124,14 +128,14 @@ const kl=mkPiece(L,pc.sl.concat([[sl,1]]),pc.ux,pc.uy),kr=mkPiece(R,pc.sl.concat
 if(!sl.roots.length)return;for(const pc of uncut)pc.sl=pc.sl.concat([[sl,sideOf(pc.poly,P,Q)]]);pieces=out;commit(sl);
 if(!RM)shake=Math.min(10,shake+(tech==='dom'?2:5));sparkBurst(a,dx,dy,tech==='dom'?8:24);swoosh(tech==='dom'?0.18:0.5);}
 
-function hachi(pc){if(!pc||pieces.length>320)return;const p=params('hachi'),th=Math.random()*Math.PI,u=[Math.cos(th),Math.sin(th)],v=[-u[1],u[0]];
-const sl=newSlash('dice','hachi',u[0],u[1]);let frontier=[pc];
+function hachi(pc,tech){tech=tech||'hachi';if(!pc||pieces.length>320)return;const p=params(tech),th=Math.random()*Math.PI,u=[Math.cos(th),Math.sin(th)],v=[-u[1],u[0]];
+const sl=newSlash('dice',tech,u[0],u[1]);let frontier=[pc];
 for(const dir of [u,v]){let lo=1e9,hi=-1e9;for(const q of pc.poly){const d=q[0]*dir[0]+q[1]*dir[1];lo=Math.min(lo,d);hi=Math.max(hi,d);}const n=Math.max(1,Math.min(7,Math.round((hi-lo)/p.cell)-1));
 for(let i=1;i<=n;i++){const off=lo+(hi-lo)*i/(n+1),P=[dir[0]*off,dir[1]*off],Q=[P[0]-dir[1],P[1]+dir[0]];sl.lines.push([P,Q]);const nf=[];
 for(const f of frontier){const[L,R]=split(f.poly,P,Q);if(!valid(L,R)){nf.push(f);continue;}const kl=mkPiece(L,f.sl.slice(),f.ux,f.uy),kr=mkPiece(R,f.sl.slice(),f.ux,f.uy);f.kids=[kl,kr];nf.push(kl,kr);}frontier=nf;}}
 for(const f of frontier)f.sl=f.sl.concat([[sl,'s']]);sl.roots=[pc];pieces=pieces.flatMap(x=>x===pc?frontier:[x]);commit(sl);
 const c=cen(pc.poly);for(let i=0;i<30;i++){const an=Math.random()*Math.PI*2,sp=1+Math.random()*4;sparks.push({x:c[0]+pc.ux,y:c[1]+pc.uy,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp,l:1,c:i%3?'255,255,255':'240,149,149'});}
-if(!RM)shake=Math.min(10,shake+4);for(let i=0;i<3;i++)setTimeout(()=>noiseBurst(0.12,5000,1500,0.35,2),i*45);
+const quiet=tech==='dom';if(!RM)shake=Math.min(10,shake+(quiet?1:4));if(!quiet)for(let i=0;i<3;i++)setTimeout(()=>noiseBurst(0.12,5000,1500,0.35,2),i*45);else noiseBurst(0.1,5000,1500,0.12,2);
 flashes.push({grid:{pc,lines:sl.lines.slice()},t:performance.now()});}
 
 function mura(a,b){let dx=b[0]-a[0],dy=b[1]-a[1];const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const now=performance.now(),p=params('mura'),E=4000,nx=-dy,ny=dx,h=p.band/2;
@@ -166,7 +170,7 @@ const sb=document.getElementById('snd');
 sb.onclick=()=>{sound=!sound;sb.textContent='音效 '+(sound?'開':'關');sb.setAttribute('aria-pressed',sound);};
 
 function step(){const now=performance.now();
-if(domain){if(now>=domain.next&&now<domain.end){const an=Math.random()*Math.PI*2,rr=Math.sqrt(Math.random())*S*0.55,ph=Math.random()*Math.PI*2,px=CX+Math.cos(ph)*rr,py=CY+Math.sin(ph)*rr;kai([px,py],[px+Math.cos(an),py+Math.sin(an)],'dom');domain.next=now+80;}if(now>domain.end+500)domain=null;}
+if(domain){if(now>=domain.next&&now<domain.end){const an=Math.random()*Math.PI*2,rr=Math.sqrt(Math.random())*S*0.55,ph=Math.random()*Math.PI*2,px=CX+Math.cos(ph)*rr,py=CY+Math.sin(ph)*rr;if(Math.random()<0.35){const cand=pieces.filter(q=>area(q.poly)>500&&!q.sl.some(([s,m])=>m==='e'&&!s.done));if(cand.length)hachi(cand[Math.floor(Math.random()*cand.length)],'dom');else kai([px,py],[px+Math.cos(an),py+Math.sin(an)],'dom');}else kai([px,py],[px+Math.cos(an),py+Math.sin(an)],'dom');domain.next=now+80;}if(now>domain.end+500)domain=null;}
 for(const sl of active){const gr=ease((now-sl.born)/GROW);if(now<sl.healStart){sl.cg=gr;sl.ct=gr;sl.rg=0;continue;}
 const p=(now-sl.healStart)/sl.dur;sl.ct=gr*(1-ease(p*2));sl.cg=gr*(1-ease(p*2-1));sl.rg=ease(p);
 if(p>=1){sl.done=true;sl.cg=0;sl.ct=0;sl.rg=1;tick();for(const r of sl.roots)for(const x of leaves(r))for(const[P,Q]of sl.lines)for(const e of seamEdges(x,P,Q))flashes.push({x,e,t:now,c:sl.kind==='void'?'157,123,255':'212,64,63'});}}
@@ -197,7 +201,14 @@ for(const s of slashes){const k=(now-s.t)/260;if(k>1)continue;const al=s.dom?0.6
 slashes=slashes.filter(s=>now-s.t<260);
 for(const s of sparks){ctx.fillStyle=`rgba(${s.c},${s.l})`;ctx.fillRect(s.x-1.1,s.y-1.1,2.2,2.2);}
 if(g&&trail.length>1){const t=trail.filter(q=>now-q.t<180);for(let i=1;i<t.length;i++){const k=i/t.length;ctx.strokeStyle=g.two||g.shift?`rgba(190,160,255,${k*0.8})`:`rgba(255,255,255,${k*0.8})`;ctx.lineWidth=k*3;ctx.beginPath();ctx.moveTo(t[i-1].p[0],t[i-1].p[1]);ctx.lineTo(t[i].p[0],t[i].p[1]);ctx.stroke();}}
+drawWheel(26,26,'slash','212,64,63',now);drawWheel(W-26,26,'mura','157,123,255',now);
 const lk=(now-levelT)/1500;if(lk<1){const al=lk<0.15?lk/0.15:1-(lk-0.15)/0.85;ctx.strokeStyle=`rgba(212,64,63,${al*0.8})`;ctx.lineWidth=2;const h=S/2+8+ease(lk)*S*0.25;ctx.strokeRect(CX-h,CY-h,h*2,h*2);ctx.fillStyle=`rgba(212,64,63,${al})`;ctx.font='900 20px "Noto Serif TC",serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(levelTxt,CX,CY+S/2+16);}}
+function backOut(x){x=Math.min(1,Math.max(0,x));const c=2.2;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2);}
+function drawWheel(x,y,t,col,now){const st=stage[t]||0,k=(now-wheel[t].t)/450,r=14,turning=k<1;const ang=(st-1+(turning?backOut(k):1))*Math.PI/4;
+ctx.save();ctx.translate(x,y);if(turning){ctx.strokeStyle=`rgba(${col},${(1-k)*0.6})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r+4+k*14,0,Math.PI*2);ctx.stroke();}
+ctx.rotate(ang);ctx.strokeStyle=`rgba(${col},0.85)`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.stroke();
+for(let i=0;i<8;i++){const a=i*Math.PI/4,on=i<st;ctx.strokeStyle=on?`rgba(${col},1)`:`rgba(${col},0.3)`;ctx.lineWidth=on?2.4:1.2;ctx.beginPath();ctx.moveTo(Math.cos(a)*4.5,Math.sin(a)*4.5);ctx.lineTo(Math.cos(a)*(r+(on?4:2)),Math.sin(a)*(r+(on?4:2)));ctx.stroke();}
+ctx.restore();}
 function loop(){step();draw();requestAnimationFrame(loop);}
 setMode('auto');renderAdapt();
 window.addEventListener('resize',resize);resize();loop();
