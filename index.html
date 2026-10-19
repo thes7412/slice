@@ -32,7 +32,7 @@ h1{font-family:var(--display);font-weight:900;font-size:22px;letter-spacing:.12e
 h1 span{color:var(--blood)}
 .count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .count b{color:var(--paper);font-weight:500;font-size:16px;margin-inline:2px}
-.chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.chips{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
 .chip{position:relative;border:1px solid var(--line);border-radius:4px;padding:4px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:0;font-size:11px;line-height:1.3;color:var(--muted);min-width:0;overflow:hidden}
 .chip .nm{font-family:var(--display);font-weight:700;color:var(--paper);font-size:13px;white-space:nowrap}
 .chip .lv{white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -43,6 +43,8 @@ h1 span{color:var(--blood)}
 #c-ao b{color:var(--ao)}#c-ao i{background:var(--ao)}
 #c-aka b{color:var(--aka)}#c-aka i{background:var(--aka)}
 #c-mura b{color:var(--mura)}#c-mura i{background:var(--mura)}
+#c-uv b{color:#aacdff}#c-uv i{background:#aacdff}
+#c-uv .nm{font-size:11px}
 .chip.max i{background:var(--paper)!important}
 #cv{flex:1;min-height:0;width:100%;display:block;border:1px solid var(--line);border-radius:4px;touch-action:none;cursor:crosshair}
 .tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:4px;overflow:hidden}
@@ -74,6 +76,7 @@ button:focus-visible{outline:2px solid var(--blood);outline-offset:2px}
   <div class="chip" id="c-ao"><span class="nm">蒼</span><span class="lv"><b>0</b>/8</span><i></i></div>
   <div class="chip" id="c-aka"><span class="nm">赫</span><span class="lv"><b>0</b>/8</span><i></i></div>
   <div class="chip" id="c-mura"><span class="nm">茈</span><span class="lv"><b>0</b>/8</span><i></i></div>
+  <div class="chip" id="c-uv"><span class="nm">無量空處</span><span class="lv"><b>0</b>/8</span><i></i></div>
 </div>
 <canvas id="cv" aria-label="白色方紙，可用宿儺與五條悟的招式攻擊，傷口會癒合並依攻擊性質逐步適應"></canvas>
 <div class="tabs" role="tablist" aria-label="角色">
@@ -91,13 +94,13 @@ const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),layer=document.cr
 const RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const GROW=140,STAGES=8,CHANT_MS=170,CHANT_DELAY=250,CHANTS={mura:'九綱 偏光 烏と声明 表裏の間',world:'龍鱗 反発 番いの流星'};
 const POOL={kai:'slash',hachi:'slash',kumo:'slash',dom:'slash',fire:'fire',burn:'fire',ao:'ao',aka:'aka',mura:'mura',world:null};
-const PER={slash:25,fire:6,ao:10,aka:10,mura:10},PNAME={slash:'斬擊',fire:'火焰',ao:'蒼',aka:'赫',mura:'茈'},PCOL={slash:'212,64,63',fire:'255,140,40',ao:'96,165,250',aka:'235,80,80',mura:'157,123,255'};
+const PER={slash:25,fire:6,ao:10,aka:10,mura:10,uv:3},PNAME={slash:'斬擊',fire:'火焰',ao:'蒼',aka:'赫',mura:'茈',uv:'無量空處'},PCOL={slash:'212,64,63',fire:'255,140,40',ao:'96,165,250',aka:'235,80,80',mura:'157,123,255',uv:'170,205,255'};
 const CHARS={sukuna:[['kai','解'],['hachi','捌'],['kumo','蜘蛛之絲'],['fire','竈・開'],['dom','伏魔御廚子']],gojo:[['ao','蒼'],['aka','赫'],['mura','茈'],['uv','無量空處']]};
-const HINTS={kai:'滑動斬開 · 點一下亂斬 · 按住不動詠唱世界斬',hachi:'點一塊紙切成細塊 · 按住不動詠唱世界斬',kumo:'點一下：以該點為中心向四周放射斬開',fire:'伏魔御廚子展開中才能用 · 點一下大爆炸燒光整個畫面，再從最大的碎塊長回來',world:'滑動：連同空間一起切開，無法被適應',dom:'點一下：全紙展開 · 按住拖曳決定範圍，越小斬得越密 · 展開期間可用竈・開',ao:'按住拖曳：藍色光球跟著手指，經過處被吸出破洞並依序癒合',aka:'點一下：紅色光球凝聚後爆炸，轟出坑洞並由內而外震碎推開',mura:'滑動抹消一條帶 · 按住不動詠唱，唸完放開釋放 200%',uv:'點一下：無量空處，期間法陣停轉、傷口不癒合'};
+const HINTS={kai:'滑動斬開 · 點一下亂斬 · 按住不動詠唱世界斬',hachi:'點一塊紙切成細塊 · 按住不動詠唱世界斬',kumo:'點一下：以該點為中心向四周放射斬開',fire:'伏魔御廚子展開中才能用 · 點一下大爆炸燒光整個畫面，再從最大的碎塊長回來',world:'滑動：連同空間一起切開，無法被適應',dom:'點一下：全紙展開 · 按住拖曳決定範圍，越小斬得越密 · 展開期間可用竈・開',ao:'按住拖曳：藍色光球跟著手指，經過處被吸出破洞並依序癒合',aka:'點一下：紅色光球凝聚後爆炸，轟出坑洞並由內而外震碎推開',mura:'滑動抹消一條帶 · 按住不動詠唱，唸完放開釋放 200%',uv:'點一下：無量空處，期間法陣停轉、傷口停止癒合；被適應後效果變弱'};
 const FLASH={kai:'212,64,63',hachi:'212,64,63',kumo:'212,64,63',dom:'212,64,63',fire:'255,140,40',burn:'255,140,40',ao:'96,165,250',aka:'230,70,70',mura:'157,123,255',world:'255,255,255'};
 let W=0,H=0,S=0,CX=0,CY=0,dpr=Math.max(1,window.devicePixelRatio||1);
 let akaQ=[],booms=[],pieces=[],active=[],flashes=[],slashes=[],voids=[],rings=[],sparks=[],stars=[],mergeT=-1e9,shake=0,count=0,sound=true,actx=null,g=null,trail=[],spread=1,domain=null,uv=null,lastTick=0,lastStep=0,worldFlash=-1e9,chant=null;
-let dirty=false,chr='sukuna',tech='kai',adapt={slash:0,fire:0,ao:0,aka:0,mura:0},stage={},levelT=-1e9,levelTxt='',levelCol='212,64,63',wheel={slash:{t:-1e9},fire:{t:-1e9},ao:{t:-1e9},aka:{t:-1e9},mura:{t:-1e9}};
+let dirty=false,chr='sukuna',tech='kai',adapt={slash:0,fire:0,ao:0,aka:0,mura:0,uv:0},stage={},levelT=-1e9,levelTxt='',levelCol='212,64,63',wheel={slash:{t:-1e9},fire:{t:-1e9},ao:{t:-1e9},aka:{t:-1e9},mura:{t:-1e9},uv:{t:-1e9}};
 try{count=+localStorage.getItem('slice-count')||0;const a=JSON.parse(localStorage.getItem('slice-adapt5')||'null');if(a)Object.assign(adapt,a);else{const o=JSON.parse(localStorage.getItem('slice-adapt4')||'null');if(o){adapt.slash=o.slash||0;adapt.fire=o.fire||0;}}}catch(e){}
 document.getElementById('cnt').textContent=count;
 
@@ -129,7 +132,8 @@ function refAt(pt){let ref=null,bd=1e18;for(const pc of pieces){const c=cen(pc.p
 function refLine(a,dx,dy){const k=(CX-a[0])*dx+(CY-a[1])*dy;return refAt([a[0]+dx*k,a[1]+dy*k]);}
 function hidden(pc){return pc.sl.some(([s,m])=>(m==='e'||m==='x')&&!s.done);}
 function newSlash(kind,t,dx,dy){const p=params(t),now=performance.now();return{kind,tech:t,n:[-dy,dx],t:[dx,dy],born:now,healStart:now+p.delay,dur:p.dur,gap:p.gap,slide:p.slide,shr:p.shr,push:p.push,lines:[],roots:[],circles:[],cg:0,ct:0,rg:0,done:false};}
-function addAdapt(t){const pl=POOL[t];if(pl&&!(uv&&performance.now()<uv.end)){adapt[pl]++;renderAdapt();}}
+function uvFreeze(){return 1-Math.pow(stageOf('uv')/STAGES,2.5);}
+function addAdapt(t){const pl=POOL[t];if(pl&&!(uv&&performance.now()<uv.end&&Math.random()<uvFreeze())){adapt[pl]++;renderAdapt();}}
 function commit(sl){active.push(sl);addAdapt(sl.tech);}
 function carve(lines){let cur=pieces;const roots=[];for(const[P,Q]of lines){const out=[];for(const pc of cur){if(area(pc.poly)<2){out.push(pc);continue;}const[L,R]=split(pc.poly,P,Q);if(!valid(L,R)){trim(pc,L,R);out.push(pc);continue;}const kl=mkPiece(L,pc.sl.slice(),pc.ux,pc.uy),kr=mkPiece(R,pc.sl.slice(),pc.ux,pc.uy);pc.kids=[kl,kr];if(!roots.includes(pc))roots.push(pc);out.push(kl,kr);}cur=out;}return{cur,roots};}
 
@@ -233,7 +237,7 @@ function regrow(sl){return sl.tech==='fire'&&sl.o&&sl.rg>0;}
 let fireLock=null;
 function step(){const now=performance.now(),dt=lastStep?Math.min(100,now-lastStep):0;lastStep=now;
 {const lk=!(domain&&now<domain.end);if(lk!==fireLock){fireLock=lk;for(const b of techBox.children)if(b.dataset.t==='fire')b.dataset.lock=lk?'1':'0';}}
-const frozen=uv&&now<uv.end;if(frozen)for(const sl of active){sl.healStart+=dt;for(const c of sl.circles)if(c.hs!==undefined)c.hs+=dt;}
+const frozen=uv&&now<uv.end;if(frozen){const d=dt*uvFreeze();for(const sl of active){sl.healStart+=d;for(const c of sl.circles)if(c.hs!==undefined)c.hs+=d;}uv.acc=(uv.acc||0)+dt;while(uv.acc>=1000){uv.acc-=1000;adapt.uv++;renderAdapt();}}
 if(chant&&!chant.done&&g&&!g.moved){const n=Math.floor((now-chant.t0-CHANT_DELAY)/CHANT_MS);if(n>chant.n){chant.n=n;const w=chant.kind==='world';tone('sine',(w?160:300)+n*(w?25:40),(w?160:300)+n*(w?25:40),0.12,0.04);}if(n>=chant.txt.length){chant.done=true;chant.kind==='world'?(tone('sine',90,45,0.9,0.2),noiseBurst(0.6,5000,1200,0.25,1)):tone('sine',523,1046,0.6,0.12);}}
 if(g&&g.ao){const o=g.ao.orb,f=1-Math.pow(0.82,dt/16.7||1);o[0]+=(g.last[0]-o[0])*f;o[1]+=(g.last[1]-o[1])*f;aoMove(g.ao,o);}
 for(const q of akaQ)if(now>=q.t0+250&&!q.fired){q.fired=true;aka([q.x,q.y]);}akaQ=akaQ.filter(q=>now<q.t0+500);
@@ -302,10 +306,10 @@ if(uvOn){const out=now>uv.end?Math.max(0,1-(now-uv.end)/600):1;title('領域展�
 if(chant&&chant.n>0){const w=chant.kind==='world',n=Math.min(chant.txt.length,chant.n),txt=chant.txt.slice(0,n),col=w?'255,215,210':'190,160,255';ctx.textAlign='center';ctx.textBaseline='top';ctx.font='900 20px "Noto Serif TC",serif';
 ctx.fillStyle=chant.done?`rgba(${col},${0.75+0.25*Math.sin(now/90)})`:`rgba(${col},0.95)`;ctx.fillText(txt,CX,48);
 if(chant.done){ctx.font='900 13px "Noto Serif TC",serif';ctx.fillStyle=`rgba(${col},0.85)`;ctx.fillText(w?'世界を断つ斬撃・放開即斬':'虛式「茈」・出力 200%',CX,76);}else if(g){ctx.strokeStyle=w?'rgba(212,64,63,0.7)':'rgba(157,123,255,0.6)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(g.s[0],g.s[1],18,-Math.PI/2,-Math.PI/2+Math.PI*2*n/chant.txt.length);ctx.stroke();}}
-let wx=20;for(const t of ['slash','fire','ao','aka','mura']){drawWheel(wx,22,t,PCOL[t],now);wx+=33;}
+let wx=20;for(const t of ['slash','fire','ao','aka','mura','uv']){drawWheel(wx,22,t,PCOL[t],now);wx+=31;}
 const lk=(now-levelT)/1500;if(lk<1){const al=lk<0.15?lk/0.15:1-(lk-0.15)/0.85;ctx.fillStyle=`rgba(${levelCol},${al})`;ctx.font='900 20px "Noto Serif TC",serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(levelTxt,CX,Math.min(H-30,CY+S/2+16));}}
 function backOut(x){x=Math.min(1,Math.max(0,x));const c=2.2;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2);}
-function drawWheel(x,y,t,col,now){const st=stage[t]||0,k=(now-wheel[t].t)/450,r=11,turning=k<1;const ang=(st-1+(turning?backOut(k):1))*Math.PI/4;const frozen=uv&&now<uv.end;
+function drawWheel(x,y,t,col,now){const st=stage[t]||0,k=(now-wheel[t].t)/450,r=11,turning=k<1;const ang=(st-1+(turning?backOut(k):1))*Math.PI/4;const frozen=uv&&now<uv.end&&t!=='uv'&&uvFreeze()>0.5;
 ctx.save();ctx.translate(x,y);if(turning){ctx.strokeStyle=`rgba(${col},${(1-k)*0.6})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r+4+k*14,0,Math.PI*2);ctx.stroke();}
 ctx.rotate(ang);const a0=frozen?0.35:0.85;ctx.strokeStyle=`rgba(${col},${a0})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(0,0,2.5,0,Math.PI*2);ctx.stroke();
 for(let i=0;i<8;i++){const a=i*Math.PI/4,on=i<st;ctx.strokeStyle=on?`rgba(${col},${frozen?0.4:1})`:`rgba(${col},0.25)`;ctx.lineWidth=on?2.2:1.1;ctx.beginPath();ctx.moveTo(Math.cos(a)*3.5,Math.sin(a)*3.5);ctx.lineTo(Math.cos(a)*(r+(on?4:2)),Math.sin(a)*(r+(on?4:2)));ctx.stroke();}
