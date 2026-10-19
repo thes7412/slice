@@ -48,6 +48,8 @@ h1 span{color:var(--blood)}
 .techs{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:6px}
 .techs button{font-family:var(--display);font-weight:700;font-size:14px;padding:7px 2px;white-space:nowrap}
 .techs button[aria-checked="true"]{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.techs button[data-lock="1"]{opacity:.38}
+.techs button[data-lock="0"][data-t="fire"]{border-color:var(--fire);box-shadow:0 0 0 1px var(--fire)}
 .hint{font-size:12px;color:var(--muted);margin:0;flex:1;min-width:0}
 .btns{display:flex;gap:8px}
 button{font:inherit;font-size:13px;color:var(--paper);background:transparent;border:1px solid var(--line);border-radius:4px;padding:6px 12px;cursor:pointer}
@@ -84,7 +86,7 @@ const GROW=140,STAGES=8,CHANT_MS=170,CHANT_DELAY=250,CHANTS={mura:'九綱 偏光
 const POOL={kai:'slash',hachi:'slash',kumo:'slash',dom:'slash',fire:'fire',burn:'fire',ao:'lim',aka:'lim',mura:'lim',world:null};
 const PER={slash:25,fire:6,lim:10},PNAME={slash:'斬擊',fire:'火焰',lim:'無下限'},PCOL={slash:'212,64,63',fire:'255,140,40',lim:'96,165,250'};
 const CHARS={sukuna:[['kai','解'],['hachi','捌'],['kumo','蜘蛛之絲'],['fire','竈・開'],['dom','伏魔御廚子']],gojo:[['ao','蒼'],['aka','赫'],['mura','茈'],['uv','無量空處']]};
-const HINTS={kai:'滑動斬開 · 點一下亂斬 · 按住不動詠唱世界斬',hachi:'點一塊紙切成細塊 · 按住不動詠唱世界斬',kumo:'點一下：以該點為中心向四周放射斬開',fire:'點一下：大爆炸燒光整個畫面，再從外圍慢慢長回來',world:'滑動：連同空間一起切開，無法被適應',dom:'點一下：全紙展開 · 按住拖曳決定範圍，越小斬得越密',ao:'按住拖曳：黑洞跟著手指，經過處被吸出破洞',aka:'點一下：以該點為中心把整張紙炸飛',mura:'滑動抹消一條帶 · 按住不動詠唱，唸完放開釋放 200%',uv:'點一下：無量空處，期間法陣停轉、傷口不癒合'};
+const HINTS={kai:'滑動斬開 · 點一下亂斬 · 按住不動詠唱世界斬',hachi:'點一塊紙切成細塊 · 按住不動詠唱世界斬',kumo:'點一下：以該點為中心向四周放射斬開',fire:'伏魔御廚子展開中才能用 · 點一下大爆炸燒光整個畫面，再從最大的碎塊長回來',world:'滑動：連同空間一起切開，無法被適應',dom:'點一下：全紙展開 · 按住拖曳決定範圍，越小斬得越密 · 展開期間可用竈・開',ao:'按住拖曳：黑洞跟著手指，經過處被吸出破洞',aka:'點一下：以該點為中心把整張紙炸飛',mura:'滑動抹消一條帶 · 按住不動詠唱，唸完放開釋放 200%',uv:'點一下：無量空處，期間法陣停轉、傷口不癒合'};
 const FLASH={kai:'212,64,63',hachi:'212,64,63',kumo:'212,64,63',dom:'212,64,63',fire:'255,140,40',burn:'255,140,40',ao:'96,165,250',aka:'230,70,70',mura:'157,123,255',world:'255,255,255'};
 let W=0,H=0,S=0,CX=0,CY=0,dpr=Math.max(1,window.devicePixelRatio||1);
 let booms=[],pieces=[],active=[],flashes=[],slashes=[],voids=[],rings=[],sparks=[],stars=[],mergeT=-1e9,shake=0,count=0,sound=true,actx=null,g=null,trail=[],spread=1,domain=null,uv=null,lastTick=0,lastStep=0,worldFlash=-1e9,chant=null;
@@ -155,13 +157,16 @@ const c=cen(pc.poly),quiet=t==='dom';pointBurst(c[0]+pc.ux,c[1]+pc.uy,quiet?6:30
 if(!quiet)for(let i=0;i<3;i++)setTimeout(()=>noiseBurst(0.12,5000,1500,0.35,2),i*45);else noiseBurst(0.1,5000,1500,0.1,2);
 flashes.push({grid:{pc,lines:sl.lines.slice()},t:performance.now()});}
 function kumo(pt){const n=6,th0=Math.random()*Math.PI;for(let i=0;i<n;i++)setTimeout(()=>{const an=th0+i*Math.PI/n;kai(pt,[pt[0]+Math.cos(an),pt[1]+Math.sin(an)],'kumo');},i*30);rings.push({x:pt[0],y:pt[1],t:performance.now(),c:'212,64,63'});noiseBurst(0.5,2600,300,0.45,0.8);if(!RM)shake=Math.min(12,shake+6);}
-function fire(pt){const now=performance.now(),p=params('fire'),far=Math.max(...[[0,0],[W,0],[0,H],[W,H]].map(c=>Math.hypot(c[0]-pt[0],c[1]-pt[1])))+30,sl=newSlash('hole','fire',1,0);
+function fire(pt){if(!(domain&&performance.now()<domain.end)){say('竈・開只能在伏魔御廚子展開時施放','255,140,40');tone('square',180,140,0.12,0.04);return;}const now=performance.now(),p=params('fire'),far=Math.max(...[[0,0],[W,0],[0,H],[W,H]].map(c=>Math.hypot(c[0]-pt[0],c[1]-pt[1])))+30,sl=newSlash('hole','fire',1,0);
 sl.circles=[{x:pt[0],y:pt[1],r0:0,r1:far,fire:true}];sl.spread=420;sl.healStart=now+sl.spread+350+p.delay;sl.dur=Math.max(sl.dur,500);commit(sl);
 booms.push({x:pt[0],y:pt[1],t:now,R:far});say('竈・開（フーガ）','255,140,40');
 pointBurst(pt[0],pt[1],140,'255,190,90',false,3.2);pointBurst(pt[0],pt[1],80,'255,90,30',false,2);pointBurst(pt[0],pt[1],40,'255,255,220',false,4);
 tone('sine',75,22,1.8,0.55);tone('sawtooth',55,30,1.2,0.12);noiseBurst(2.2,900,50,1.0,0.4);noiseBurst(0.35,4000,800,0.5,0.8);if(!RM)shake=26;}
 function world(a,b){const now=performance.now();worldFlash=now;say('世界を断つ斬撃','255,255,255');const sl=cutLine(a,b,'world');if(!RM)shake=14;noiseBurst(0.9,6000,80,0.7,0.6);tone('sine',60,30,1.2,0.3);if(sl)lineBurst(a,sl.t[0],sl.t[1],40,'255,255,255');}
-function startDomain(pt,r){if(domain)return;const now=performance.now(),rmax=Math.hypot(W,H)/2,R=Math.max(40,Math.min(rmax,r||rmax));domain={x:pt[0],y:pt[1],R,t0:now,next:now+420,end:now+420+2600,burned:false,iv:28+52*(R/rmax)};
+function worldGrid(a,b){let dx=b[0]-a[0],dy=b[1]-a[1];const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const now=performance.now(),sp=Math.max(46,S/4),n=3;worldFlash=now;say('世界を断つ斬撃・捌','255,255,255');
+const dirs=[[dx,dy],[-dy,dx]];let k=0;for(const[ux,uy]of dirs)for(let i=-1;i<=1;i++){const ox=a[0]+(-uy)*i*sp,oy=a[1]+ux*i*sp;setTimeout(()=>{const sl=cutLine([ox,oy],[ox+ux,oy+uy],'world');if(sl){sl.gap=7;sl.slide=9;}},k++*40);}
+if(!RM)shake=18;noiseBurst(1.1,6000,80,0.8,0.6);tone('sine',60,28,1.4,0.3);for(let i=0;i<3;i++)setTimeout(()=>noiseBurst(0.15,5000,1500,0.35,2),i*60);pointBurst(a[0],a[1],60,'255,255,255',false,2);}
+function startDomain(pt,r){if(domain)return;const now=performance.now(),rmax=Math.hypot(W,H)/2,R=Math.max(40,Math.min(rmax,r||rmax));domain={x:pt[0],y:pt[1],R,t0:now,next:now+420,end:now+420+5000,burned:false,iv:28+52*(R/rmax)};
 say('領域展開・伏魔御廚子');noiseBurst(1.2,200,60,0.4,0.5);tone('sawtooth',55,40,1.4,0.08);}
 function inDom(pc){const c=cen(pc.poly);return Math.hypot(c[0]+pc.ux-domain.x,c[1]+pc.uy-domain.y)<domain.R;}
 function domCut(){if(pieces.length>320)return;const now=performance.now(),rr=Math.sqrt(Math.random())*domain.R,ph=Math.random()*Math.PI*2,px=domain.x+Math.cos(ph)*rr,py=domain.y+Math.sin(ph)*rr,an=Math.random()*Math.PI,dx=Math.cos(an),dy=Math.sin(an),E=4000;
@@ -197,24 +202,28 @@ cv.addEventListener('pointermove',e=>{if(!g||e.pointerId!==g.id)return;const p=p
 if(!g.moved&&Math.hypot(p[0]-g.s[0],p[1]-g.s[1])>12){g.moved=true;if(chant&&!chant.done)chant=null;}if(g.ao)aoMove(g.ao,p);});
 cv.addEventListener('pointerup',e=>{if(!g||e.pointerId!==g.id)return;const G=g;g=null;const s=G.s,p=G.last,m=G.moved,r=()=>{const an=Math.random()*Math.PI*2;return[s[0]+Math.cos(an),s[1]+Math.sin(an)];};
 const wc=chant&&chant.kind==='world'&&chant.done;if(chant&&chant.kind==='world')chant=null;
-switch(tech){case'kai':wc?world(s,m?p:r()):m?kai(s,p):randomKai();break;case'hachi':wc?world(s,m?p:r()):hachi(pieceAt(s)||pieceAt(p));break;case'kumo':kumo(m?p:s);break;case'fire':fire(m?p:s);break;
+switch(tech){case'kai':wc?world(s,m?p:r()):m?kai(s,p):randomKai();break;case'hachi':wc?worldGrid(s,m?p:r()):hachi(pieceAt(s)||pieceAt(p));break;case'kumo':kumo(m?p:s);break;case'fire':fire(m?p:s);break;
 case'dom':startDomain(s,m?Math.hypot(p[0]-s[0],p[1]-s[1]):0);break;case'ao':aoEnd(G.ao);break;case'aka':aka(m?p:s);break;
 case'mura':{const big=chant&&chant.kind==='mura'&&chant.done;chant=null;if(big)mura(s,m?p:[s[0]+1,s[1]],true);else mura(s,m?p:r());break;}case'uv':startUV();break;}});
 cv.addEventListener('pointercancel',e=>{if(g&&e.pointerId===g.id){if(g.ao)aoEnd(g.ao);g=null;trail=[];chant=null;}});
 const techBox=document.getElementById('techs'),tabBtns=[...document.querySelectorAll('.tabs button')];
 function setTech(t){tech=t;for(const b of techBox.children)b.setAttribute('aria-checked',b.dataset.t===t);document.getElementById('hint').textContent=HINTS[t];}
-function setChar(c){chr=c;for(const b of tabBtns)b.setAttribute('aria-selected',b.dataset.c===c);techBox.innerHTML='';for(const[k,n]of CHARS[c]){const b=document.createElement('button');b.type='button';b.setAttribute('role','radio');b.dataset.t=k;b.textContent=n;b.onclick=()=>setTech(k);techBox.appendChild(b);}setTech(CHARS[c][0][0]);}
+function setChar(c){chr=c;fireLock=null;for(const b of tabBtns)b.setAttribute('aria-selected',b.dataset.c===c);techBox.innerHTML='';for(const[k,n]of CHARS[c]){const b=document.createElement('button');b.type='button';b.setAttribute('role','radio');b.dataset.t=k;b.textContent=n;b.onclick=()=>setTech(k);techBox.appendChild(b);}setTech(CHARS[c][0][0]);}
 for(const b of tabBtns)b.onclick=()=>setChar(b.dataset.c);
 document.getElementById('rst').onclick=()=>{for(const t in adapt)adapt[t]=0;stage={};renderAdapt();};
 const sb=document.getElementById('snd');
 sb.onclick=()=>{sound=!sound;sb.textContent='音效 '+(sound?'開':'關');sb.setAttribute('aria-pressed',sound);};
 
-function holeR(sl,c,now){if(sl.done)return 0;const grow=sl.spread?ease((now-sl.born)/sl.spread):1;return(c.r0+(c.r1-c.r0)*grow)*ease(Math.min(1,(now-sl.born)/120))*(1-sl.rg);}
+function holeR(sl,c,now){if(sl.done)return 0;const grow=sl.spread?ease((now-sl.born)/sl.spread):1;return(c.r0+(c.r1-c.r0)*grow)*ease(Math.min(1,(now-sl.born)/120))*(c.fire?1:(1-sl.rg));}
+function regrow(sl){return sl.tech==='fire'&&sl.o&&sl.rg>0;}
+let fireLock=null;
 function step(){const now=performance.now(),dt=lastStep?Math.min(100,now-lastStep):0;lastStep=now;
+{const lk=!(domain&&now<domain.end);if(lk!==fireLock){fireLock=lk;for(const b of techBox.children)if(b.dataset.t==='fire')b.dataset.lock=lk?'1':'0';}}
 const frozen=uv&&now<uv.end;if(frozen)for(const sl of active)sl.healStart+=dt;
 if(chant&&!chant.done&&g&&!g.moved){const n=Math.floor((now-chant.t0-CHANT_DELAY)/CHANT_MS);if(n>chant.n){chant.n=n;const w=chant.kind==='world';tone('sine',(w?160:300)+n*(w?25:40),(w?160:300)+n*(w?25:40),0.12,0.04);}if(n>=chant.txt.length){chant.done=true;chant.kind==='world'?(tone('sine',90,45,0.9,0.2),noiseBurst(0.6,5000,1200,0.25,1)):tone('sine',523,1046,0.6,0.12);}}
-if(domain){if(now>=domain.next&&now<domain.end){domCut();domain.next=now+domain.iv;}if(now>=domain.end&&!domain.burned){domain.burned=true;shrineFinale();}if(now>domain.end+700)domain=null;}
+if(domain){if(now>=domain.next&&now<domain.end){domCut();domain.next=now+domain.iv;}if(now>domain.end+700)domain=null;}
 for(const sl of active){const gr=ease((now-sl.born)/GROW);if(now<sl.healStart){sl.cg=gr;sl.ct=gr;sl.rg=0;continue;}
+if(sl.tech==='fire'&&!sl.o){let best=null,ba=-1;for(const pc of pieces){if(hidden(pc))continue;const a=area(pc.poly);if(a>ba){ba=a;best=pc;}}const c=best?cen(best.poly):[CX,CY];sl.o=best?[c[0]+best.ux,c[1]+best.uy]:[CX,CY];sl.far=Math.max(...[[0,0],[W,0],[0,H],[W,H]].map(q=>Math.hypot(q[0]-sl.o[0],q[1]-sl.o[1])))+20;}
 const p=(now-sl.healStart)/sl.dur;sl.ct=gr*(1-ease(p*2));sl.cg=gr*(1-ease(p*2-1));sl.rg=ease(p);
 if(p>=1){sl.done=true;sl.cg=0;sl.ct=0;sl.rg=1;tick();const col=FLASH[sl.tech];if(sl.kind!=='burn'&&sl.kind!=='hole')for(const r of sl.roots)for(const x of leaves(r))for(const[P,Q]of sl.lines)for(const e of seamEdges(x,P,Q))flashes.push({x,e,t:now,c:col});}}
 active=active.filter(s=>!s.done);
@@ -225,7 +234,7 @@ else if(m==='s')sc=Math.min(sc,1-sl.shr*sl.cg);else if(m==='r'){const d=sl.push*
 pc.ux=ux;pc.uy=uy;pc.sc=sc;}
 if(active.length)dirty=true;
 if(dirty&&!active.length&&!domain&&!g){dirty=false;whole();mergeT=now;count++;document.getElementById('cnt').textContent=count;try{localStorage.setItem('slice-count',count);}catch(e){}chime();}
-for(const sl of active)if(sl.kind==='hole'&&sl.tech==='fire'&&Math.random()<0.5){const c=sl.circles[0],r=holeR(sl,c,now);if(r>2){const an=Math.random()*Math.PI*2;sparks.push({x:c.x+Math.cos(an)*r,y:c.y+Math.sin(an)*r,vx:(Math.random()-0.5)*1.5,vy:-1-Math.random()*2,l:1,c:Math.random()<0.5?'255,170,60':'255,90,30'});}}
+for(const sl of active)if(sl.kind==='hole'&&sl.tech==='fire'&&Math.random()<0.5){const rg=regrow(sl),c=rg?{x:sl.o[0],y:sl.o[1]}:sl.circles[0],r=rg?sl.far*sl.rg:holeR(sl,c,now);if(r>2){const an=Math.random()*Math.PI*2;sparks.push({x:c.x+Math.cos(an)*r,y:c.y+Math.sin(an)*r,vx:(Math.random()-0.5)*1.5,vy:-1-Math.random()*2,l:1,c:Math.random()<0.5?'255,170,60':'255,90,30'});}}
 for(const s of sparks){s.x+=s.vx;s.y+=s.vy;s.vx*=0.93;s.vy*=0.93;s.l-=0.03;}sparks=sparks.filter(s=>s.l>0);shake*=0.82;}
 
 function bandClip(polys,sl,d){const E=4000,u=sl.u,n=sl.nn,C=sl.c,out=[];const P1=[C[0]+n[0]*d-u[0]*E,C[1]+n[1]*d-u[1]*E],Q1=[C[0]+n[0]*d+u[0]*E,C[1]+n[1]*d+u[1]*E],P2=[C[0]-n[0]*d-u[0]*E,C[1]-n[1]*d-u[1]*E],Q2=[C[0]-n[0]*d+u[0]*E,C[1]-n[1]*d+u[1]*E];
@@ -244,9 +253,9 @@ if(g&&tech==='dom'&&g.moved){ctx.setLineDash([5,5]);ctx.strokeStyle='rgba(212,64
 const rk=(now-mergeT)/600;if(rk<1){ctx.strokeStyle=`rgba(242,239,232,${(1-rk)*0.5})`;ctx.lineWidth=1.5;const h=S/2+rk*S*0.35;ctx.strokeRect(CX-h,CY-h,h*2,h*2);}
 lx.setTransform(1,0,0,1,0,0);lx.clearRect(0,0,layer.width,layer.height);lx.setTransform(dpr,0,0,dpr,dpr*sx,dpr*sy);lx.lineJoin='round';lx.fillStyle='#f2efe8';lx.strokeStyle='#f2efe8';lx.lineWidth=0.6;
 for(const pc of pieces){for(const poly of visibleParts(pc)){lx.beginPath();poly.forEach((q,i)=>{const[x,y]=xf(pc,q);i?lx.lineTo(x,y):lx.moveTo(x,y);});lx.closePath();lx.fill();lx.stroke();}}
-lx.globalCompositeOperation='destination-out';lx.fillStyle='#000';for(const sl of active){if(sl.kind!=='hole')continue;for(const c of sl.circles){const r=holeR(sl,c,now);if(r>0.3){lx.beginPath();lx.arc(c.x,c.y,r,0,Math.PI*2);lx.fill();}}}lx.globalCompositeOperation='source-over';
+lx.globalCompositeOperation='destination-out';lx.fillStyle='#000';for(const sl of active){if(sl.kind!=='hole')continue;if(regrow(sl)){lx.beginPath();lx.rect(-60,-60,W+120,H+120);lx.arc(sl.o[0],sl.o[1],Math.max(0.1,sl.far*sl.rg),0,Math.PI*2,true);lx.fill('evenodd');continue;}for(const c of sl.circles){const r=holeR(sl,c,now);if(r>0.3){lx.beginPath();lx.arc(c.x,c.y,r,0,Math.PI*2);lx.fill();}}}lx.globalCompositeOperation='source-over';
 ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(layer,0,0);ctx.restore();
-for(const sl of active){if(sl.kind!=='hole')continue;for(const c of sl.circles){const r=holeR(sl,c,now);if(r<1)continue;if(c.fire){const fl=0.6+0.4*Math.sin(now/60+c.x);ctx.strokeStyle=`rgba(255,110,30,${0.35*fl})`;ctx.lineWidth=9;ctx.beginPath();ctx.arc(c.x,c.y,r,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=`rgba(255,200,110,${0.9*fl})`;ctx.lineWidth=2;ctx.stroke();}}}
+for(const sl of active){if(sl.kind!=='hole')continue;for(const c0 of sl.circles){const rg=regrow(sl),c=rg?{x:sl.o[0],y:sl.o[1],fire:true}:c0,r=rg?sl.far*sl.rg:holeR(sl,c0,now);if(r<1)continue;if(c.fire){const fl=0.6+0.4*Math.sin(now/60+c.x);ctx.strokeStyle=`rgba(255,110,30,${0.35*fl})`;ctx.lineWidth=9;ctx.beginPath();ctx.arc(c.x,c.y,r,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=`rgba(255,200,110,${0.9*fl})`;ctx.lineWidth=2;ctx.stroke();}}}
 for(const b of booms){const k=(now-b.t)/700;if(k>1)continue;ctx.save();ctx.globalCompositeOperation='lighter';const rr=Math.max(4,b.R*ease(Math.min(1,k*1.6)));const gr=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,rr);
 gr.addColorStop(0,`rgba(255,255,230,${(1-k)})`);gr.addColorStop(0.25,`rgba(255,200,90,${(1-k)*0.9})`);gr.addColorStop(0.6,`rgba(255,100,20,${(1-k)*0.6})`);gr.addColorStop(1,'rgba(120,20,0,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(b.x,b.y,rr,0,Math.PI*2);ctx.fill();ctx.restore();
 const sk=Math.min(1,k*1.3);ctx.strokeStyle=`rgba(255,230,180,${(1-sk)*0.9})`;ctx.lineWidth=14*(1-sk)+2;ctx.beginPath();ctx.arc(b.x,b.y,b.R*1.1*ease(sk),0,Math.PI*2);ctx.stroke();
