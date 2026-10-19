@@ -223,8 +223,8 @@ if(res>0.01){for(let t=-1600;t<=1600;t+=22){const P=[C[0]+dx*t-nx*E,C[1]+dy*t-ny
 let hit=0;for(const pc of cur){if(inBand(pc)&&!(Math.random()<res)){pc.sl=pc.sl.concat([[sl,'e']]);hit++;}}
 if(!hit)return;sl.roots=roots;pieces=cur;commit(sl);if(!RM)shake=Math.min(big?24:12,shake+(big?20:8));lineBurst(a,dx,dy,big?80:30,'190,160,255');tone('sine',big?120:180,big?30:60,big?1.2:0.6,big?0.4:0.25);noiseBurst(big?1.0:0.5,1200,120,big?0.6:0.35,0.7);}
 function startFusion(blue,tp){const now=performance.now();blue.phase='fused';blue.relT=now;blue.healStart=now+1400;fusion={x:blue.orb[0],y:blue.orb[1],rx:tp[0],ry:tp[1],t0:now,phase:'merge'};tone('sine',300,900,0.25,0.12);noiseBurst(0.3,800,3000,0.2,1);}
-function fusionBoom(big){if(!fusion||fusion.phase==='boom')return;const now=performance.now(),x=fusion.x,y=fusion.y,R=(big?Math.max(...[[0,0],[W,0],[0,H],[W,H]].map(c=>Math.hypot(c[0]-x,c[1]-y)))+40:S*0.8)*(params('mura').band/52);
-const sl=newSlash('hole','mura',1,0);sl.circles=[{x,y,r0:0,r1:R}];sl.spread=big?700:500;sl.healStart=now+sl.spread+params('mura').delay;commit(sl);
+function fusionBoom(big){if(!fusion||fusion.phase==='boom')return;const now=performance.now(),x=fusion.x,y=fusion.y,R=big?Math.max(...[[0,0],[W,0],[0,H],[W,H]].map(c=>Math.hypot(c[0]-x,c[1]-y)))+40:S*0.8,Rd=R*(params('mura').band/52);
+const sl=newSlash('hole','mura',1,0);sl.circles=[{x,y,r0:0,r1:Rd}];sl.spread=big?700:500;sl.healStart=now+sl.spread+params('mura').delay;commit(sl);
 fusion.phase='boom';fusion.tb=now;fusion.R=R;fusion.big=big;if(chant&&chant.kind==='fusion')chant=null;say(big?'虛式「茈」・無制限（完全詠唱）':'虛式「茈」・無制限','190,160,255');
 pointBurst(x,y,big?240:120,'200,170,255',false,big?4.5:3);pointBurst(x,y,big?100:50,'255,255,255',false,big?5.5:3.5);tone('sine',big?70:110,22,big?2.0:1.2,big?0.6:0.45);noiseBurst(big?2.2:1.2,3000,50,big?1.0:0.8,0.4);if(!RM)shake=big?32:22;}
 function fusionTick(now){if(!fusion)return;if(fusion.phase==='merge'&&now>=fusion.t0+260){fusion.phase='wait';fusion.tw=now;tone('sine',200,600,0.5,0.15);noiseBurst(0.5,400,2400,0.25,1);}
