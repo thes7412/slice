@@ -92,7 +92,7 @@ button:focus-visible{outline:2px solid var(--blood);outline-offset:2px}
 <script>
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),layer=document.createElement('canvas'),lx=layer.getContext('2d');
 const RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const GROW=140,STAGES=8,CHANT_MS=170,CHANT_DELAY=250,CHANTS={mura:'九綱 偏光 烏と声明 表裏の間',world:'龍鱗 反発 番いの流星',ao:'位相 黄昏 智慧の瞳',aka:'位相 波羅蜜 光の柱'};
+const CAP=1600,VANISH=16,GROW=140,STAGES=8,CHANT_MS=170,CHANT_DELAY=250,CHANTS={mura:'九綱 偏光 烏と声明 表裏の間',world:'龍鱗 反発 番いの流星',ao:'位相 黄昏 智慧の瞳',aka:'位相 波羅蜜 光の柱'};
 const POOL={kai:'slash',hachi:'slash',kumo:'slash',dom:'slash',fire:'fire',burn:'fire',ao:'ao',aka:'aka',mura:'mura',world:null};
 const PER={slash:25,fire:6,ao:10,aka:10,mura:10,uv:3},PNAME={slash:'斬擊',fire:'火焰',ao:'蒼',aka:'赫',mura:'茈',uv:'無量空處'},PCOL={slash:'212,64,63',fire:'255,140,40',ao:'96,165,250',aka:'235,80,80',mura:'157,123,255',uv:'170,205,255'};
 const CHARS={sukuna:[['kai','解'],['hachi','捌'],['kumo','蜘蛛之絲'],['fire','竈・開'],['dom','伏魔御廚子']],gojo:[['ao','蒼'],['aka','赫'],['mura','茈'],['uv','無量空處']]};
@@ -126,11 +126,11 @@ function split(poly,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],L=[],R=[];const s=p=>dx
 function seamEdges(x,P,Q){const L=Math.hypot(Q[0]-P[0],Q[1]-P[1])||1,u=[(Q[0]-P[0])/L,(Q[1]-P[1])/L],out=[];for(let i=0;i<x.poly.length;i++){const a=x.poly[i],b=x.poly[(i+1)%x.poly.length];if(Math.abs(u[0]*(a[1]-P[1])-u[1]*(a[0]-P[0]))<0.6&&Math.abs(u[0]*(b[1]-P[1])-u[1]*(b[0]-P[0]))<0.6&&Math.hypot(b[0]-a[0],b[1]-a[1])>0.5)out.push([a,b]);}return out;}
 function sideOf(poly,P,Q){const c=cen(poly);return (Q[0]-P[0])*(c[1]-P[1])-(Q[1]-P[1])*(c[0]-P[0])>=0?1:-1;}
 function valid(L,R){return L.length>=3&&R.length>=3&&area(L)>=3&&area(R)>=3;}
-function trim(pc,L,R){const a=L.length>=3?area(L):0,b=R.length>=3?area(R):0;if(a>0.01&&b>0.01)pc.poly=a>=b?L:R;}
+function trim(pc,L,R){const a=L.length>=3?area(L):0,b=R.length>=3?area(R):0;if(a>0.01&&b>0.01){pc.poly=a>=b?L:R;pc.vchk=false;}}
 function inPoly(pt,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>pt[1])!==(b[1]>pt[1])&&pt[0]<(b[0]-a[0])*(pt[1]-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;}
 function refAt(pt){let ref=null,bd=1e18;for(const pc of pieces){const c=cen(pc.poly),d=(c[0]+pc.ux-pt[0])**2+(c[1]+pc.uy-pt[1])**2;if(d<bd){bd=d;ref=pc;}}return ref?[ref.ux,ref.uy]:[0,0];}
 function refLine(a,dx,dy){const k=(CX-a[0])*dx+(CY-a[1])*dy;return refAt([a[0]+dx*k,a[1]+dy*k]);}
-function hidden(pc){return pc.sl.some(([s,m,x])=>((m==='e'||m==='x')&&!s.done)||(m==='cap'&&!s.done&&capLive(x,performance.now())));}
+function hidden(pc){return pc.sl.some(([s,m,x])=>((m==='e'||m==='x'||m==='v')&&!s.done)||(m==='cap'&&!s.done&&capLive(x,performance.now())));}
 function newSlash(kind,t,dx,dy){const p=params(t),now=performance.now();return{kind,tech:t,n:[-dy,dx],t:[dx,dy],born:now,healStart:now+p.delay,dur:p.dur,gap:p.gap,slide:p.slide,shr:p.shr,push:p.push,lines:[],roots:[],circles:[],cg:0,ct:0,rg:0,done:false};}
 function uvFreeze(){return 1-Math.pow(stageOf('uv')/STAGES,2.5);}
 function addAdapt(t){const pl=POOL[t];if(pl&&!(uv&&performance.now()<uv.end&&Math.random()<uvFreeze())){adapt[pl]++;renderAdapt();}}
@@ -150,7 +150,7 @@ function pointBurst(x,y,n,col,inward,pow){pow=pow||1;for(let i=0;i<n;i++){const 
 
 /* 宿儺 */
 function cutLine(a,b,t){let dx=b[0]-a[0],dy=b[1]-a[1];const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const E=4000,A=[a[0]-dx*E,a[1]-dy*E],B=[a[0]+dx*E,a[1]+dy*E],wd=t==='world';
-slashes.push({a:A,b:B,t:performance.now(),dim:t==='kumo',world:wd});if(pieces.length>320)return null;
+slashes.push({a:A,b:B,t:performance.now(),dim:t==='kumo',world:wd});if(pieces.length>CAP)return null;
 const sl=newSlash(wd?'world':'cut',t,dx,dy);if(wd){sl.gap=12;sl.slide=22;sl.wp=[a[0],a[1]];}
 const[RX,RY]=refLine(a,dx,dy),P=[A[0]-RX,A[1]-RY],Q=[B[0]-RX,B[1]-RY];sl.lines=[[P,Q]];
 const out=[],uncut=[];for(const pc of pieces){if(area(pc.poly)<2){out.push(pc);uncut.push(pc);continue;}const[L,R]=split(pc.poly,P,Q);if(!valid(L,R)){trim(pc,L,R);out.push(pc);uncut.push(pc);continue;}
@@ -158,7 +158,7 @@ const kl=mkPiece(L,pc.sl.concat([[sl,1]]),pc.ux,pc.uy),kr=mkPiece(R,pc.sl.concat
 if(!sl.roots.length&&!wd)return null;for(const pc of uncut)pc.sl=pc.sl.concat([[sl,sideOf(pc.poly,P,Q)]]);pieces=out;commit(sl);return sl;}
 function kai(a,b,t){t=t||'kai';const sl=cutLine(a,b,t);if(!sl)return;const quiet=t==='kumo';if(!RM)shake=Math.min(10,shake+(quiet?2:5));lineBurst(a,sl.t[0],sl.t[1],quiet?6:24);noiseBurst(0.28,3200,500,quiet?0.16:0.5);}
 function randomKai(){const n=3+Math.floor(Math.random()*3);for(let i=0;i<n;i++)setTimeout(()=>{const an=Math.random()*Math.PI*2,px=CX+(Math.random()-0.5)*S*0.6,py=CY+(Math.random()-0.5)*S*0.6;kai([px,py],[px+Math.cos(an),py+Math.sin(an)]);},i*85);}
-function hachi(pc,t){t=t||'hachi';if(!pc||pieces.length>320)return;const p=params(t),th=Math.random()*Math.PI,u=[Math.cos(th),Math.sin(th)],v=[-u[1],u[0]];
+function hachi(pc,t){t=t||'hachi';if(!pc||pieces.length>CAP)return;const p=params(t),th=Math.random()*Math.PI,u=[Math.cos(th),Math.sin(th)],v=[-u[1],u[0]];
 const sl=newSlash('dice',t,u[0],u[1]);let frontier=[pc];
 for(const dir of [u,v]){let lo=1e9,hi=-1e9;for(const q of pc.poly){const d=q[0]*dir[0]+q[1]*dir[1];lo=Math.min(lo,d);hi=Math.max(hi,d);}const n=Math.max(1,Math.min(7,Math.round((hi-lo)/p.cell)-1));
 for(let i=1;i<=n;i++){const off=lo+(hi-lo)*i/(n+1),P=[dir[0]*off,dir[1]*off],Q=[P[0]-dir[1],P[1]+dir[0]];sl.lines.push([P,Q]);const nf=[];
@@ -179,10 +179,10 @@ const dirs=[[dx,dy],[-dy,dx]];let k=0;for(const[ux,uy]of dirs)for(let i=-1;i<=1;
 if(!RM)shake=18;noiseBurst(1.1,6000,80,0.8,0.6);tone('sine',60,28,1.4,0.3);for(let i=0;i<3;i++)setTimeout(()=>noiseBurst(0.15,5000,1500,0.35,2),i*60);pointBurst(a[0],a[1],60,'255,255,255',false,2);}
 function fitCircle(path){let a=0,cx=0,cy=0;const n=path.length;for(let i=0;i<n;i++){const p=path[i],q=path[(i+1)%n],c=p[0]*q[1]-q[0]*p[1];a+=c;cx+=(p[0]+q[0])*c;cy+=(p[1]+q[1])*c;}a/=2;let x,y;if(Math.abs(a)>1){x=cx/(6*a);y=cy/(6*a);}else{x=path.reduce((t,p)=>t+p[0],0)/n;y=path.reduce((t,p)=>t+p[1],0)/n;}return[x,y,Math.max(40,Math.sqrt(Math.abs(a)/Math.PI))];}
 function startDomain(pt,r){if(domain)return;const now=performance.now(),rmax=Math.hypot(W,H)/2,R=Math.max(40,Math.min(rmax,r||rmax));if(!r)pt=[CX,CY];domain={x:pt[0],y:pt[1],R,t0:now,next:now+420,end:now+420+5000,burned:false,iv:28+52*(R/rmax)};
-if(R<rmax*0.9&&pieces.length<=320){const[RX,RY]=refAt(pt),c=[pt[0]-RX,pt[1]-RY],n=14,ls=[];for(let k=0;k<n;k++){const a0=k/n*Math.PI*2,a1=(k+1)/n*Math.PI*2;ls.push([[c[0]+Math.cos(a0)*R,c[1]+Math.sin(a0)*R],[c[0]+Math.cos(a1)*R,c[1]+Math.sin(a1)*R]]);}pieces=carve(ls).cur;}
+if(R<rmax*0.9&&pieces.length<=CAP){const[RX,RY]=refAt(pt),c=[pt[0]-RX,pt[1]-RY],n=14,ls=[];for(let k=0;k<n;k++){const a0=k/n*Math.PI*2,a1=(k+1)/n*Math.PI*2;ls.push([[c[0]+Math.cos(a0)*R,c[1]+Math.sin(a0)*R],[c[0]+Math.cos(a1)*R,c[1]+Math.sin(a1)*R]]);}pieces=carve(ls).cur;}
 say('領域展開・伏魔御廚子');noiseBurst(1.2,200,60,0.4,0.5);tone('sawtooth',55,40,1.4,0.08);}
 function inDom(pc){const c=cen(pc.poly);return Math.hypot(c[0]+pc.ux-domain.x,c[1]+pc.uy-domain.y)<domain.R;}
-function domCut(){if(pieces.length>320)return;const now=performance.now(),rr=Math.sqrt(Math.random())*domain.R,ph=Math.random()*Math.PI*2,px=domain.x+Math.cos(ph)*rr,py=domain.y+Math.sin(ph)*rr,an=Math.random()*Math.PI,dx=Math.cos(an),dy=Math.sin(an),E=4000;
+function domCut(){if(pieces.length>CAP)return;const now=performance.now(),rr=Math.sqrt(Math.random())*domain.R,ph=Math.random()*Math.PI*2,px=domain.x+Math.cos(ph)*rr,py=domain.y+Math.sin(ph)*rr,an=Math.random()*Math.PI,dx=Math.cos(an),dy=Math.sin(an),E=4000;
 if(Math.random()<0.3){const cand=pieces.filter(q=>area(q.poly)>500&&!hidden(q)&&inDom(q));if(cand.length){hachi(cand[Math.floor(Math.random()*cand.length)],'dom');return;}}
 const sl=newSlash('dice','dom',dx,dy),[RX,RY]=refAt([px,py]),P=[px-RX-dx*E,py-RY-dy*E],Q=[px-RX+dx*E,py-RY+dy*E];sl.lines=[[P,Q]];const out=[];
 for(const pc of pieces){if(area(pc.poly)<2||!inDom(pc)){out.push(pc);continue;}const[L,R]=split(pc.poly,P,Q);if(!valid(L,R)){trim(pc,L,R);out.push(pc);continue;}const kl=mkPiece(L,pc.sl.concat([[sl,'s']]),pc.ux,pc.uy),kr=mkPiece(R,pc.sl.concat([[sl,'s']]),pc.ux,pc.uy);pc.kids=[kl,kr];sl.roots.push(pc);out.push(kl,kr);}
@@ -198,10 +198,10 @@ for(const pc of pieces)pc.sl=pc.sl.concat([[sl,'pl']]);active.push(sl);addAdapt(
 function nearPoly(pc,c,R){const q=[c[0]-pc.ux,c[1]-pc.uy];if(inPoly(q,pc.poly))return true;const P=pc.poly;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((q[0]-a[0])*dx+(q[1]-a[1])*dy)/L));if(Math.hypot(a[0]+dx*t-q[0],a[1]+dy*t-q[1])<R)return true;}return false;}
 function capLive(x,now){return now<x.hs+x.dur;}
 function capturedBy(pc,sl){const now=performance.now();return pc.sl.some(([s,m,x])=>s===sl&&m==='cap'&&capLive(x,now));}
-function aoTear(sl,c,R){if(pieces.length>420)return;const E=4000,now=performance.now();let cur=pieces;for(let k=0;k<4;k++){const an=Math.random()*Math.PI,dx=Math.cos(an),dy=Math.sin(an),ox=c[0]+(Math.random()-0.5)*R*0.6,oy=c[1]+(Math.random()-0.5)*R*0.6,out=[];
+function aoTear(sl,c,R){if(pieces.length>CAP)return;const E=4000,now=performance.now();let cur=pieces;for(let k=0;k<4;k++){const an=Math.random()*Math.PI,dx=Math.cos(an),dy=Math.sin(an),ox=c[0]+(Math.random()-0.5)*R*0.6,oy=c[1]+(Math.random()-0.5)*R*0.6,out=[];
 for(const pc of cur){if(capturedBy(pc,sl)||area(pc.poly)<12){out.push(pc);continue;}if(!nearPoly(pc,c,R*1.4)){out.push(pc);continue;}const P=[ox-pc.ux-dx*E,oy-pc.uy-dy*E],Q=[ox-pc.ux+dx*E,oy-pc.uy+dy*E],[L,Rr]=split(pc.poly,P,Q);if(!valid(L,Rr)){trim(pc,L,Rr);out.push(pc);continue;}
 const kl=mkPiece(L,pc.sl.slice(),pc.ux,pc.uy),kr=mkPiece(Rr,pc.sl.slice(),pc.ux,pc.uy);pc.kids=[kl,kr];out.push(kl,kr);}cur=out;}pieces=cur;if(Math.random()<0.5)noiseBurst(0.08,3000,900,0.06,2);}
-function aoCapture(sl,c,R,orbR,max){const now=performance.now();let n=0;for(const pc of pieces){if(n>=max)break;if(capturedBy(pc,sl)||hidden(pc))continue;const a=area(pc.poly);if(pieces.length<=420&&a>sl.capR*sl.capR*0.3)continue;const pc0=cen(pc.poly),d=Math.hypot(pc0[0]+pc.ux-c[0],pc0[1]+pc.uy-c[1]);if(d>R)continue;
+function aoCapture(sl,c,R,orbR,max){const now=performance.now();let n=0;for(const pc of pieces){if(n>=max)break;if(capturedBy(pc,sl)||hidden(pc))continue;const a=area(pc.poly);if(pieces.length<=CAP&&a>sl.capR*sl.capR*0.3)continue;const pc0=cen(pc.poly),d=Math.hypot(pc0[0]+pc.ux-c[0],pc0[1]+pc.uy-c[1]);if(d>R)continue;
 const pp=params('ao'),x={a:Math.random()*Math.PI*2,r:orbR*(0.35+Math.random()*0.6),t:now,hs:now+pp.delay,dur:pp.dur};sl.caps.push(x);pc.sl=pc.sl.concat([[sl,'cap',x]]);n++;sl.ncap++;}}
 function aoBurst(sl){const now=performance.now();sl.phase='burst';sl.relT=now;sl.healStart=now+250+params('ao').delay;const n=Math.min(160,30+sl.ncap*4);pointBurst(sl.orb[0],sl.orb[1],n,'190,220,255',false,sl.max?3.2:2);pointBurst(sl.orb[0],sl.orb[1],n/2,'255,255,255',false,sl.max?4:2.6);
 rings.push({x:sl.orb[0],y:sl.orb[1],t:now,c:'120,180,255',big:!!sl.max});tone('sine',sl.max?90:160,30,sl.max?1.2:0.6,sl.max?0.45:0.3);noiseBurst(sl.max?1.0:0.5,2500,90,sl.max?0.8:0.5,0.6);if(!RM)shake=Math.min(26,shake+(sl.max?22:10));}
@@ -209,7 +209,7 @@ function aoEnd(sl,max){const now=performance.now();if(max){sl.phase='max';sl.max
 function aoTick(sl,now,dt){if(sl.phase==='hold'){if(g&&g.ao===sl){const o=sl.orb,f=1-Math.pow(0.82,dt/16.7||1);o[0]+=(g.last[0]-o[0])*f;o[1]+=(g.last[1]-o[1])*f;}
 if(Math.hypot(sl.orb[0]-sl.tearAt[0],sl.orb[1]-sl.tearAt[1])>sl.capR*0.45||now-sl.tearT>90){for(let q=0;q<4;q++){aoTear(sl,sl.orb,sl.capR);const lim=sl.capR*sl.capR*0.3;if(!pieces.some(pc=>{if(capturedBy(pc,sl))return false;const c=cen(pc.poly);return Math.hypot(c[0]+pc.ux-sl.orb[0],c[1]+pc.uy-sl.orb[1])<sl.capR&&area(pc.poly)>lim;}))break;}sl.tearAt=sl.orb.slice();sl.tearT=now;}aoCapture(sl,sl.orb,sl.capR,26,10);}
 else if(sl.phase==='max'){const k=Math.min(1,(now-sl.maxT)/1300),R=sl.capR+(sl.Rbig-sl.capR)*ease(k);sl.Rcur=R;if(now-sl.tearT>30){for(let q=0;q<2;q++){const an=Math.random()*Math.PI*2,rr=Math.random()*R;aoTear(sl,[sl.orb[0]+Math.cos(an)*rr,sl.orb[1]+Math.sin(an)*rr],Math.max(sl.capR,R*0.3));}sl.tearT=now;}aoCapture(sl,sl.orb,R,30+50*ease(k),14);if(now-sl.maxT>2500)aoBurst(sl);}}
-function aka(pt,big){if(pieces.length>320)return;const now=performance.now(),p=params('aka'),[RX,RY]=refAt(pt),ph=[pt[0]-RX,pt[1]-RY],Rf=big?S*2:S*0.55,E=4000,speed=big?1500:1100;const sl=newSlash('aka','aka',1,0);sl.k=p.push/(S*0.5)*(big?1.8:1);sl.p=pt.slice();sl.speed=speed;
+function aka(pt,big){if(pieces.length>CAP)return;const now=performance.now(),p=params('aka'),[RX,RY]=refAt(pt),ph=[pt[0]-RX,pt[1]-RY],Rf=big?S*2:S*0.55,E=4000,speed=big?1500:1100;const sl=newSlash('aka','aka',1,0);sl.k=p.push/(S*0.5)*(big?1.8:1);sl.p=pt.slice();sl.speed=speed;
 const j=[];for(let i=0;i<18;i++)j.push(0.72+Math.random()*0.5);sl.crater={x:ph[0],y:ph[1],r1:p.craterR*(big?2.2:1),j};
 for(let i=0,nc=Math.round((9-7*Math.pow(stageOf('aka')/STAGES,2.5))*(big?2:1));i<nc;i++){const an=Math.random()*Math.PI,dx=Math.cos(an),dy=Math.sin(an),off=(Math.random()-0.5)*Rf*0.7,ox=ph[0]-dy*off,oy=ph[1]+dx*off;sl.lines.push([[ox-dx*E,oy-dy*E],[ox+dx*E,oy+dy*E]]);}
 let cur=pieces;const roots=[];for(const[P,Q]of sl.lines){const out=[];for(const pc of cur){const c=cen(pc.poly);if(area(pc.poly)<2||Math.hypot(c[0]+pc.ux-pt[0],c[1]+pc.uy-pt[1])>Rf){out.push(pc);continue;}const[L,R]=split(pc.poly,P,Q);if(!valid(L,R)){trim(pc,L,R);out.push(pc);continue;}const kl=mkPiece(L,pc.sl.slice(),pc.ux,pc.uy),kr=mkPiece(R,pc.sl.slice(),pc.ux,pc.uy);pc.kids=[kl,kr];if(!roots.includes(pc))roots.push(pc);out.push(kl,kr);}cur=out;}
@@ -218,7 +218,7 @@ sl.roots=roots;pieces=cur;commit(sl);rings.push({x:pt[0],y:pt[1],t:now,c:'255,90
 if(big){booms.push({x:pt[0],y:pt[1],t:now,R:Math.hypot(W,H)*0.6,red:true});rings.push({x:pt[0],y:pt[1],t:now+120,c:'255,200,180',speed:speed*0.8,big:true});say('術式反轉「赫」','255,110,100');}}
 function mura(a,b,big){let dx=b[0]-a[0],dy=b[1]-a[1];const len=Math.hypot(dx,dy)||1;muraQ.push({a:a.slice(),d:[dx/len,dy/len],big:!!big,t0:performance.now(),dur:big?800:500});tone('sine',big?330:440,big?660:880,big?0.8:0.5,0.06);tone('sine',big?220:300,big?660:880,big?0.8:0.5,0.06);}
 function muraFire(a,b,big){let dx=b[0]-a[0],dy=b[1]-a[1];const len=Math.hypot(dx,dy)||1;dx/=len;dy/=len;const now=performance.now(),p=params('mura'),E=4000,nx=-dy,ny=dx,h=p.band/2*(big?2.4:1),speed=big?800:1300;
-const em=Math.pow(stageOf('mura')/STAGES,2.5),res=0.6*em;let tmax=0;for(const t of [(0-a[0])/dx,(W-a[0])/dx,(0-a[1])/dy,(H-a[1])/dy])if(isFinite(t)&&t>tmax)tmax=t;voids.push({a:a.slice(),d:[dx,dy],w:52*(big?2.4:1),t:now,big,speed,len:Math.min(tmax+80,3000)});if(big)say('虛式「茈」200%','157,123,255');if(pieces.length>320)return;
+const em=Math.pow(stageOf('mura')/STAGES,2.5),res=0.6*em;let tmax=0;for(const t of [(0-a[0])/dx,(W-a[0])/dx,(0-a[1])/dy,(H-a[1])/dy])if(isFinite(t)&&t>tmax)tmax=t;voids.push({a:a.slice(),d:[dx,dy],w:52*(big?2.4:1),t:now,big,speed,len:Math.min(tmax+80,3000)});if(big)say('虛式「茈」200%','157,123,255');if(pieces.length>CAP)return;
 const sl=newSlash('void','mura',dx,dy),[RX,RY]=refLine(a,dx,dy),C=[a[0]-RX,a[1]-RY];sl.c=C;sl.u=[dx,dy];sl.nn=[nx,ny];sl.h=h;
 sl.lines=[[[C[0]+nx*h-dx*E,C[1]+ny*h-dy*E],[C[0]+nx*h+dx*E,C[1]+ny*h+dy*E]],[[C[0]-nx*h-dx*E,C[1]-ny*h-dy*E],[C[0]-nx*h+dx*E,C[1]-ny*h+dy*E]]];
 const cv0=carve(sl.lines),roots=cv0.roots;let cur=cv0.cur;const inBand=pc=>{const c=cen(pc.poly);return Math.abs((c[0]-C[0])*nx+(c[1]-C[1])*ny)<h;};
@@ -274,9 +274,9 @@ const p=(now-sl.healStart)/sl.dur;sl.ct=gr*(1-ease(p*2));sl.cg=gr*(1-ease(p*2-1)
 if(p>=1){sl.done=true;sl.cg=0;sl.ct=0;sl.rg=1;tick();const col=FLASH[sl.tech];}}
 active=active.filter(s=>!s.done);
 const nCut=active.filter(s=>s.kind==='cut').length,tgt=nCut<=4?1:4/nCut;spread+=(tgt-spread)*0.15;
-for(const pc of pieces){let ux=0,uy=0,sc=1;const aoE=[];for(const[sl,m,x]of pc.sl){if(sl.done)continue;if(m==='pl'||m==='cap'){aoE.push([sl,m,x]);continue;}
+for(const pc of pieces){if(!pc.vchk){pc.vchk=true;if(area(pc.poly)<VANISH){let last=null;for(const[s2]of pc.sl)if(!s2.done)last=s2;if(last)pc.sl=pc.sl.concat([[last,'v']]);}}let ux=0,uy=0,sc=1;const aoE=[];for(const[sl,m,x]of pc.sl){if(sl.done)continue;if(m==='pl'||m==='cap'){aoE.push([sl,m,x]);continue;}
 if(typeof m==='number'){const sp=sl.kind==='cut'?spread:1,ge=sl.gap*sp*sl.cg;ux+=m*ge*sl.n[0];uy+=m*ge*sl.n[1];if(m>0){const te=sl.slide*sp*sl.ct;ux+=te*sl.t[0];uy+=te*sl.t[1];}}
-else if(m==='s')sc=Math.min(sc,1-sl.shr*sl.cg);else if(m==='r'){const d=sl.push*sl.cg;ux+=d*x[0];uy+=d*x[1];}else if(m==='w'){const R=(now-sl.born)/1000*sl.speed,L=Math.hypot(x.v[0],x.v[1])||1,d=sl.k*sl.cg*Math.min(1,R/L);ux+=d*x.v[0];uy+=d*x.v[1];}else if(m==='x'&&now>=x)sc=Math.min(sc,sl.rg);}
+else if(m==='s')sc=Math.min(sc,1-sl.shr*sl.cg);else if(m==='v')sc=Math.min(sc,sl.rg);else if(m==='r'){const d=sl.push*sl.cg;ux+=d*x[0];uy+=d*x[1];}else if(m==='w'){const R=(now-sl.born)/1000*sl.speed,L=Math.hypot(x.v[0],x.v[1])||1,d=sl.k*sl.cg*Math.min(1,R/L);ux+=d*x.v[0];uy+=d*x.v[1];}else if(m==='x'&&now>=x)sc=Math.min(sc,sl.rg);}
 if(aoE.length){const c0=cen(pc.poly);for(const[sl,m,x]of aoE){const cx=c0[0]+ux,cy=c0[1]+uy,live=sl.phase==='hold'||sl.phase==='max';
 if(m==='cap'){if(!capLive(x,now))continue;const back=now<x.hs?0:ease((now-x.hs)/x.dur);if(live||back>0){const at=ease((now-x.t)/220)*(1-back),ang=x.a+(now-sl.born)*0.004,tx=sl.orb[0]+Math.cos(ang)*x.r,ty=sl.orb[1]+Math.sin(ang)*x.r;if(live){ux+=(tx-cx)*at;uy+=(ty-cy)*at;sc=Math.min(sc,1-0.72*at);}else sc=Math.min(sc,Math.max(sl.rg,back));}else sc=Math.min(sc,sl.rg);}
 else if(!aoE.some(([s2,m2,x2])=>s2===sl&&m2==='cap'&&capLive(x2,now))){const hold=live?1:Math.max(0,1-ease((now-sl.relT)/300));if(hold<=0)continue;const R2=sl.phase==='max'?(sl.Rcur||sl.capR)*1.5:sl.R2,dx=sl.orb[0]-cx,dy=sl.orb[1]-cy,d=Math.hypot(dx,dy);if(d<R2&&d>1){const q=1-d/R2,f=0.35*Math.pow(q,1.5)*hold;ux+=dx*f;uy+=dy*f;sc=Math.min(sc,1-0.18*q*hold);}}}}
