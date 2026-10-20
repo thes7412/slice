@@ -95,7 +95,7 @@ const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),layer=document.cr
 const RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const CAP=1600,VANISH=16,GROW=140,STAGES=8,CHANT_MS=170,CHANT_DELAY=250,CHANTS={mura:'九綱 偏光 烏と声明 表裏の間',world:'龍鱗 反発 番いの流星',ao:'位相 黄昏 智慧の瞳',aka:'位相 波羅蜜 光の柱'};
 const POOL={kai:'slash',hachi:'slash',kumo:'slash',dom:'slash',fire:'fire',burn:'fire',ao:'ao',aka:'aka',mura:'mura',world:null};
-const PER={slash:25,fire:6,ao:10,aka:10,mura:10,uv:3},PNAME={slash:'斬擊',fire:'火焰',ao:'蒼',aka:'赫',mura:'茈',uv:'無量空處'},PCOL={slash:'212,64,63',fire:'255,140,40',ao:'96,165,250',aka:'235,80,80',mura:'157,123,255',uv:'170,205,255'};
+const PER={slash:40,fire:6,ao:10,aka:10,mura:10,uv:3},PNAME={slash:'斬擊',fire:'火焰',ao:'蒼',aka:'赫',mura:'茈',uv:'無量空處'},PCOL={slash:'212,64,63',fire:'255,140,40',ao:'96,165,250',aka:'235,80,80',mura:'157,123,255',uv:'170,205,255'};
 const CHARS={sukuna:[['kai','解'],['hachi','捌'],['kumo','蜘蛛之絲'],['fire','竈・開'],['dom','伏魔御廚子']],gojo:[['ao','蒼'],['aka','赫'],['mura','茈'],['uv','無量空處']]};
 const HINTS={kai:'滑動斬開 · 點一下亂斬 · 按住不動詠唱世界斬',hachi:'點一塊紙切成細塊 · 按住不動詠唱世界斬',kumo:'點一下：以該點為中心向四周放射斬開',fire:'按住往後拉弓，放開射出火箭，落點大爆炸 · 伏魔御廚子中變成竈，點燃圈內粉塵',world:'滑動：連同空間一起切開，無法被適應',dom:'點一下：全畫面展開 · 用手指畫一圈決定範圍，圈越小斬得越密 · 展開期間可用竈・開',ao:'按住拖曳：撕紙捲走並吸近周圍，放開壓爆 · 按住不動詠唱出力最大（存在時切到赫點它可融合成茈）',aka:'點一下：紅光球凝聚後爆炸 · 按住不動詠唱，唸完放開原地超大爆炸',mura:'滑動抹消一條帶 · 按住不動詠唱，唸完放開釋放 200% · 蒼赫融合倒數中按住可完全詠唱',uv:'點一下：無量空處，期間法陣停轉、傷口停止癒合；被適應後效果變弱'};
 const FLASH={kai:'212,64,63',hachi:'212,64,63',kumo:'212,64,63',dom:'212,64,63',fire:'255,140,40',burn:'255,140,40',ao:'96,165,250',aka:'230,70,70',mura:'157,123,255',world:'255,255,255'};
@@ -163,8 +163,8 @@ function refLine(a,dx,dy){const k=(CX-a[0])*dx+(CY-a[1])*dy;return refAt([a[0]+d
 function hidden(pc){return pc.sl.some(([s,m])=>(m==='e'||m==='v')&&!s.done);}
 function newSlash(kind,t,dx,dy){const p=params(t),now=performance.now();return{kind,tech:t,n:[-dy,dx],t:[dx,dy],born:now,healStart:now+p.delay,dur:p.dur,gap:p.gap,slide:p.slide,shr:p.shr,push:p.push,lines:[],roots:[],circles:[],cg:0,ct:0,rg:0,done:false};}
 function uvFreeze(){return 1-Math.pow(stageOf('uv')/STAGES,2.5);}
-function addAdapt(t){const pl=POOL[t];if(pl&&!(uv&&performance.now()<uv.end&&Math.random()<uvFreeze())){adapt[pl]++;renderAdapt();}}
-function commit(sl){active.push(sl);addAdapt(sl.tech);}
+function addAdapt(t,w){const pl=POOL[t];if(pl&&!(uv&&performance.now()<uv.end&&Math.random()<uvFreeze())){adapt[pl]+=w===undefined?1:w;renderAdapt();}}
+function commit(sl){active.push(sl);addAdapt(sl.tech,sl.tech==='dom'?0.25:1);}
 function carve(lines){let cur=pieces;const roots=[];for(const[P,Q]of lines){const out=[];for(const pc of cur){if(area(pc.poly)<2){out.push(pc);continue;}const[L,R]=split(pc.poly,P,Q);if(!valid(L,R)){trim(pc,L,R);out.push(pc);continue;}const kl=mkPiece(L,pc.sl.slice(),pc.ux,pc.uy),kr=mkPiece(R,pc.sl.slice(),pc.ux,pc.uy);pc.kids=[kl,kr];if(!roots.includes(pc))roots.push(pc);out.push(kl,kr);}cur=out;}return{cur,roots};}
 
 function ac(){actx=actx||new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx;}
