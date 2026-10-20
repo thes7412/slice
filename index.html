@@ -130,16 +130,16 @@ function summonBtn(){return{x:CX-74,y:CY-22,w:148,h:44};}
 function startSummon(now){if(!mw.dead||mw.summon)return;mw.summon={t0:now};for(const k in adapt)adapt[k]=0;stage={};renderAdapt();for(const k in stage)stage[k]=0;}
 function summonTick(now){const M=mw.summon;if(!M)return;const tC=SUMMON.length*230+250;if(!M.chimed&&now>=M.t0+tC){M.chimed=true;tone('sine',220,440,0.8,0.2);tone('sine',330,660,0.8,0.08);noiseBurst(0.8,300,2400,0.25,1);}
 if(now>=M.t0+tC+1300){mw.summon=null;mw.dead=null;mw.ox=mw.oy=mw.vx=mw.vy=mw.aj=mw.av=0;mw.from=mw.to=0;mw.t=-1e9;whole();mergeT=now;dirty=false;mw.cool=now+600;}}
-function mwStart(now){mw.res={t0:now,dur:1000,rk:0};say('魔虛羅・再生','230,195,110');tone('sine',110,220,1.0,0.25);tone('sine',220,440,0.9,0.08);noiseBurst(0.8,300,2400,0.2,1);}
+function mwStart(now,st){mw.res={t0:now,dur:2600-Math.max(0,Math.min(7,(st||1)-1))/7*1900,rk:0};say('魔虛羅・再生','230,195,110');tone('sine',110,220,1.0,0.25);tone('sine',220,440,0.9,0.08);noiseBurst(0.8,300,2400,0.2,1);}
 function mwTick(now,dt){const fk=dt/16.7||1;mw.vx+=-mw.ox*0.12*fk;mw.vy+=-mw.oy*0.12*fk;const dmp=Math.pow(0.82,fk);mw.vx*=dmp;mw.vy*=dmp;mw.ox+=mw.vx*fk;mw.oy+=mw.vy*fk;const lim=S*0.18,L=Math.hypot(mw.ox,mw.oy);if(L>lim){mw.ox*=lim/L;mw.oy*=lim/L;}
 mw.av+=-mw.aj*0.1*fk;mw.av*=dmp;mw.aj+=mw.av*fk;
 if(mw.dead){summonTick(now);return;}
-const R=mw.res;if(R){if(!R.ab&&(active.some(s2=>s2.born>R.t0)||g)){R.ab=now;R.rk0=R.rk;}if(R.ab){R.rk=R.rk0*Math.max(0,1-(now-R.ab)/200);if(now-R.ab>=200){mw.res=null;mw.cool=now+400;}return;}
+const R=mw.res;if(R){if(!R.ab&&active.some(s2=>s2.born>R.t0+250)){R.ab=now;R.rk0=R.rk;}if(R.ab){R.rk=R.rk0*Math.max(0,1-(now-R.ab)/200);if(now-R.ab>=200){mw.res=null;mw.cool=now+400;}return;}
 const k=(now-R.t0)/R.dur;R.rk=ease(Math.min(1,k/0.75));if(k>=1){mw.res=null;mw.cool=now+600;dirty=false;whole();mergeT=now;count++;document.getElementById('cnt').textContent=count;try{localStorage.setItem('slice-count',count);}catch(e){}chime();}return;}
 {const cand=active.filter(s2=>s2.cov0!==undefined&&!s2.done&&s2.cov0>=0.9&&stageOf(POOL[s2.tech])<STAGES);if(cand.length){const sp=cand.some(s2=>now<s2.wipeEnd);if(!sp){const last=cand[cand.length-1];if(!last.killChk){last.killChk=true;if(wipedOut(now)){mwKill(now,last);return;}}}else{mw.bad=0;return;}}}
 if(!dirty||now<mw.cool||g||fusion||muraQ.length||akaQ.length||fArrows.length||(uv&&now<uv.end)||(domain&&now<domain.end+700)){mw.bad=0;return;}
-if(Math.random()<0.25){if(mwBroken(now)){mw.bad=mw.bad||now;if(now-mw.bad>=180){mw.bad=0;mwStart(now);}}else mw.bad=0;}}
-function turnWheel(t,st){const now=performance.now();mwTurn(t);wheel[t].t=now;say(st>=STAGES?'完全適應「'+PNAME[t]+'」':'法陣轉動「'+PNAME[t]+'」・'+st+'/8',PCOL[t]);
+}
+function turnWheel(t,st){const now=performance.now();mwTurn(t);if(!mw.dead&&!mw.res&&!(uv&&now<uv.end&&uvFreeze()>0.5)&&mwBroken(now))mwStart(now,st);wheel[t].t=now;say(st>=STAGES?'完全適應「'+PNAME[t]+'」':'法陣轉動「'+PNAME[t]+'」・'+st+'/8',PCOL[t]);
 for(const sl of active){if(POOL[sl.tech]!==t||sl.done)continue;for(const c of sl.circles)if(c.hs!==undefined&&c.hs>now)c.hs=now;if(sl.caps)for(const x of sl.caps)if(x.hs>now){x.hs=now;x.dur=170;}if(sl.tears)for(const x of sl.tears)if(now<x.hs+x.dur){x.hs=now;x.dur=170;}sl.healStart=Math.min(sl.healStart,now);if(now<sl.healStart+sl.dur){sl.healStart=now;sl.dur=170;}}thunk();gong();}
 
 function resize(){const r=cv.getBoundingClientRect();if(Math.abs(r.width-W)<1&&Math.abs(r.height-H)<1)return;W=r.width;H=r.height;cv.width=layer.width=W*dpr;cv.height=layer.height=H*dpr;S=Math.min(W,H)*0.5;CX=W/2;CY=H/2;
