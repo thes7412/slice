@@ -237,7 +237,7 @@ if(Math.random()<0.3){const cand=pieces.filter(q=>area(q.poly)>500&&!hidden(q)&&
 const sl=newSlash('dice','dom',dx,dy),[RX,RY]=refAt([px,py]),P=[px-RX-dx*E,py-RY-dy*E],Q=[px-RX+dx*E,py-RY+dy*E];sl.lines=[[P,Q]];const out=[];
 for(const pc of pieces){if(area(pc.poly)<2||!inDom(pc)){out.push(pc);continue;}const[L,R]=split(pc.poly,P,Q);if(!valid(L,R)){trim(pc,L,R);out.push(pc);continue;}const kl=mkPiece(L,pc.sl.concat([[sl,'s']]),pc.ux,pc.uy),kr=mkPiece(R,pc.sl.concat([[sl,'s']]),pc.ux,pc.uy);pc.kids=[kl,kr];sl.roots.push(pc);out.push(kl,kr);}
 slashes.push({a:[px-dx*E,py-dy*E],b:[px+dx*E,py+dy*E],t:now,dim:true,clip:{x:domain.x,y:domain.y,r:domain.R}});if(!sl.roots.length)return;pieces=out;commit(sl);noiseBurst(0.12,4000,800,0.08,1.5);}
-function kamado(){if(!domain)return;const now=performance.now(),e=fireE(),r=domain.R*(1+(0.28-1)*e),sl=scorch(domain.x,domain.y,r,false,now);mwHit(domain.x,domain.y,9);active.push(sl);addAdapt('fire');
+function kamado(){if(!domain)return;const now=performance.now(),e=fireE(),r=domain.R*(1+(0.28-1)*e),sl=scorch(domain.x,domain.y,r,false,now);sl.cov0=1;sl.wipeEnd=now+r/FIRE_SPEED*1000+BURN+120;mwHit(domain.x,domain.y,9);active.push(sl);addAdapt('fire');
 booms.push({x:domain.x,y:domain.y,t:now,R:r*1.05,clip:r});say('竈（カミノ）','255,140,40');
 tone('sine',70,22,1.6,0.5);noiseBurst(1.8,900,50,0.9,0.4);noiseBurst(0.4,4000,700,0.4,0.8);if(!RM)shake=26;domain.end=Math.min(domain.end,now);}
 
