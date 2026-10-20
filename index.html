@@ -218,9 +218,9 @@ if(near)for(const h of near)if(h.k==='z'&&h.a<0.999&&h.r>0.5){lx.save();clipOut(
 function zoneF(z,a){return z.irr?1+0.11*Math.sin(3*a+z.ph[0])+0.07*Math.sin(5*a+z.ph[1])+0.05*Math.sin(8*a+z.ph[2])+0.03*Math.sin(13*a+z.ph[3]):1;}
 function zoneR(z,now){return Math.max(0,Math.min(z.R,(now-z.t0)/1000*FIRE_SPEED));}
 function zonePath(g2,z,r,cx,cy,cont){const X=cx===undefined?z.x:cx,Y=cy===undefined?z.y:cy;if(!cont)g2.beginPath();if(!z.irr){g2.moveTo(X+Math.max(0.1,r),Y);g2.arc(X,Y,Math.max(0.1,r),0,Math.PI*2);return;}const N=56;for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,f=1+0.11*Math.sin(3*a+z.ph[0])+0.07*Math.sin(5*a+z.ph[1])+0.05*Math.sin(8*a+z.ph[2])+0.03*Math.sin(13*a+z.ph[3]),rr=Math.max(0.1,r*f);i?g2.lineTo(X+Math.cos(a)*rr,Y+Math.sin(a)*rr):g2.moveTo(X+Math.cos(a)*rr,Y+Math.sin(a)*rr);}g2.closePath();}
-function fire(pt){const now=performance.now(),e=Math.pow(fireS(),1.5),far=Math.max(...[[0,0],[W,0],[0,H],[W,H]].map(c=>Math.hypot(c[0]-pt[0],c[1]-pt[1])));let D=1;for(const pc of pieces){if(hidden(pc))continue;for(const q of pc.poly){const v=xf(pc,q);D=Math.max(D,Math.hypot(v[0]-pt[0],v[1]-pt[1]));}}const R=Math.max(S*0.3,D*1.5+(S*0.3-D*1.5)*e);
+function fire(pt){const now=performance.now(),e=Math.pow(fireS(),1.5),far=Math.max(...[[0,0],[W,0],[0,H],[W,H]].map(c=>Math.hypot(c[0]-pt[0],c[1]-pt[1])));let D=1;for(const pc of pieces){if(hidden(pc))continue;for(const q of pc.poly){const v=xf(pc,q);D=Math.max(D,Math.hypot(v[0]-pt[0],v[1]-pt[1]));}}const R=S*0.42+(S*0.18-S*0.42)*e;
 const cov0=coverRatio(now),sl=scorch(pt[0],pt[1],R,true,now);sl.cov0=cov0;sl.wipeEnd=now+R/FIRE_SPEED*1000+BURN+120;commit(sl);mwHit(pt[0],pt[1],13);
-booms.push({x:pt[0],y:pt[1],t:now,R:far});say('開（フーガ）','255,140,40');
+booms.push({x:pt[0],y:pt[1],t:now,R:R*1.6});say('開（フーガ）','255,140,40');
 pointBurst(pt[0],pt[1],140,'255,190,90',false,3.2);pointBurst(pt[0],pt[1],80,'255,90,30',false,2);pointBurst(pt[0],pt[1],40,'255,255,220',false,4);
 tone('sine',75,22,1.8,0.55);tone('sawtooth',55,30,1.2,0.12);noiseBurst(2.2,900,50,1.0,0.4);noiseBurst(0.35,4000,800,0.5,0.8);if(!RM)shake=26;}
 function world(a,b){const now=performance.now();worldFlash=now;say('世界を断つ斬撃','255,255,255');const sl=cutLine(a,b,'world');if(!RM)shake=14;noiseBurst(0.9,6000,80,0.7,0.6);tone('sine',60,30,1.2,0.3);if(sl)lineBurst(a,sl.t[0],sl.t[1],40,'255,255,255');}
