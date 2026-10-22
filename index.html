@@ -137,7 +137,7 @@ mw.av+=-mw.aj*0.1*fk;mw.av*=dmp;mw.aj+=mw.av*fk;
 if(mw.dead){summonTick(now);return;}
 const R=mw.res;if(R){if(!R.ab&&active.some(s2=>s2.born>R.t0+250)){R.ab=now;R.rk0=R.rk;}if(R.ab){R.rk=R.rk0*Math.max(0,1-(now-R.ab)/200);if(now-R.ab>=200){mw.res=null;mw.cool=now+400;}return;}
 const k=(now-R.t0)/R.dur;R.rk=ease(Math.min(1,k/0.75));if(k>=1){mw.res=null;mw.cool=now+600;dirty=false;whole();mergeT=now;count++;document.getElementById('cnt').textContent=count;try{localStorage.setItem('slice-count',count);}catch(e){}chime();}return;}
-{const cand=active.filter(s2=>s2.cov0!==undefined&&!s2.done&&s2.cov0>=0.9&&stageOf(POOL[s2.tech])<STAGES);if(cand.length){const sp=cand.some(s2=>now<s2.wipeEnd);if(!sp){const last=cand[cand.length-1];if(!last.killChk){last.killChk=true;if(wipedOut(now)){mwKill(now,last);return;}}}else{mw.bad=0;return;}}}
+if(dirty&&now-(mw.wchk||0)>110){mw.wchk=now;const h=S/2-2;let any=false;for(let i=0;i<5&&!any;i++)for(let j=0;j<5;j++)if(coveredAt([CX-h+i/4*2*h,CY-h+j/4*2*h],now)){any=true;break;}if(!any&&wipedOut(now)){mwKill(now,active[active.length-1]||{tech:null});return;}}
 if(!dirty||now<mw.cool||g||fusion||muraQ.length||akaQ.length||fArrows.length||(uv&&now<uv.end)||(domain&&now<domain.end+700)){mw.bad=0;return;}
 }
 function turnWheel(t,st){const now=performance.now();mwTurn(t);if(!mw.dead&&!mw.res&&!(uv&&now<uv.end&&uvFreeze()>0.5)&&mwBroken(now))mwStart(now,st);wheel[t].t=now;say(st>=STAGES?'完全適應「'+PNAME[t]+'」':'法陣轉動「'+PNAME[t]+'」・'+st+'/8',PCOL[t]);
